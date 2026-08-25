@@ -1,0 +1,30 @@
+# Python & Virtual Environment
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.ipynb_checkpoints/
+
+# Data & Models (Keep repo lightweight < 2GB)
+data/raw/
+data/processed/
+models/*.pth
+models/*.pt
+models/*.onnx
+!models/.gitkeep
+reports/*.pdf
+
+# MATLAB & Simulink artifacts
+*.asv
+*.slxc
+slprj/
+*.autosave
+*.mex*
+
+# Logs & IDE
+.idea/
+.vscode/
+*.log
+.DS_Store

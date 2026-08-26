@@ -45,7 +45,6 @@ def extract_retinal_mask(rgbImg):
         cleanMask = cleanMask
         
     return cleanMask, croppedImg
-
 def assess_quality(rgbImg, mask):
     greenChannel = rgbImg[:,:,1]
     

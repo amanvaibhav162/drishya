@@ -109,6 +109,7 @@ def process_single_image(args):
         metrics = assess_quality(croppedImg, mask)
         status, feedback, Q = evaluate_iqa(metrics, thresholds)
         
+
         finalImg = croppedImg.copy()
         
         if status == "BORDERLINE":

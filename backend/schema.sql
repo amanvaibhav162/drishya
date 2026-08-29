@@ -1,0 +1,39 @@
+-- =====================================================================
+-- DRISHYA Supabase Database Schema
+-- Run this script in the Supabase SQL Editor (https://app.supabase.com)
+-- =====================================================================
+
+-- 1. Create Patient Screenings Table
+CREATE TABLE IF NOT EXISTS public.screenings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    patient_name TEXT NOT NULL,
+    patient_phone TEXT,
+    abha_id TEXT,
+    icdr_grade INTEGER NOT NULL,
+    grade_title TEXT NOT NULL,
+    confidence TEXT NOT NULL,
+    referable_dr BOOLEAN NOT NULL,
+    iqa_score REAL NOT NULL,
+    num_microaneurysms INTEGER DEFAULT 0,
+    exudate_area_pct TEXT DEFAULT '0.00%',
+    pdf_report_url TEXT,
+    gradcam_image_url TEXT
+);
+
+-- 2. Enable Row Level Security (RLS)
+ALTER TABLE public.screenings ENABLE ROW LEVEL SECURITY;
+
+-- 3. Allow Public Read and Insert Policies for Tele-Screening Stations
+CREATE POLICY "Allow public read access to screenings"
+    ON public.screenings FOR SELECT
+    USING (true);
+
+CREATE POLICY "Allow public insert to screenings"
+    ON public.screenings FOR INSERT
+    WITH CHECK (true);
+
+-- 4. Instructions for Storage Buckets:
+-- In your Supabase Dashboard -> Storage, create two public buckets:
+--   a) "drishya-reports" (Public bucket for 1-Page PDF reports)
+--   b) "drishya-scans"   (Public bucket for Grad-CAM++ & Preprocessed scans)

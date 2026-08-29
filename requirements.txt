@@ -22,3 +22,11 @@ grad-cam>=1.4.8
 reportlab>=4.0.0
 pillow>=10.0.0
 tqdm>=4.65.0
+
+# Backend & Cloud Sync
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart>=0.0.9
+python-dotenv>=1.0.1
+supabase>=2.10.0
+

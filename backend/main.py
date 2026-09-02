@@ -17,7 +17,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for React frontend (localhost:5173 / production)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,10 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Model Service
-model_service = ModelService(model_path="models/best_model.pth")
+model_service = ModelService(model_path="models/student_mtl_lcnet_best.pth")
 
-# Static outputs directory
 os.makedirs("backend/outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="backend/outputs"), name="outputs")
 
@@ -54,7 +51,6 @@ async def screen_patient(
     Receives patient fundus scan, runs IQA, AI Grading, Grad-CAM++, generates PDF, and syncs to Supabase.
     """
     try:
-        # 1. Read uploaded image bytes
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -70,14 +66,11 @@ async def screen_patient(
             "center": "PHC Rampur | Rural Eye Care Hub"
         }
 
-        # 2. Run Complete Screening Pipeline
         result: Dict[str, Any] = model_service.run_screening_pipeline(img_bgr, patient_info, output_dir="backend/outputs")
 
-        # 3. If IQA failed, return retake alert immediately
         if not result.get("success"):
             return JSONResponse(status_code=200, content=result)
 
-        # 4. Sync with Supabase (Storage & DB)
         files = result.get("files", {})
         pdf_path = files.get("pdf_report_path", "")
         gradcam_path = files.get("gradcam_path", "")

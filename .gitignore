@@ -10,11 +10,20 @@ __pycache__/
 # Data & Models (Keep repo lightweight < 2GB)
 data/raw/
 data/processed/
+data/final_processed/
+data/formated_data_processed/
 models/*.pth
 models/*.pt
-models/*.onnx
+models/*.onnx*
+models/*.data
 !models/.gitkeep
 reports/*.pdf
+
+# Generated fundus images & outputs
+backend/outputs/
+ui/public/assets/*.png
+ui/public/assets/*.pdf
+!ui/public/assets/drishyalogo.jpeg
 
 # MATLAB & Simulink artifacts
 *.asv

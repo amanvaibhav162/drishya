@@ -19,6 +19,7 @@ seaborn>=0.12.0
 
 # Explainability & Reports
 grad-cam>=1.4.8
+segmentation-models-pytorch>=0.3.3
 reportlab>=4.0.0
 pillow>=10.0.0
 tqdm>=4.65.0

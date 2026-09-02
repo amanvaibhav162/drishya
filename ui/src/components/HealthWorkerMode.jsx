@@ -1,23 +1,55 @@
-import React, { useState } from 'react';
-import { Camera, AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone, Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function HealthWorkerMode({ 
-  presetData, 
   patientInfo, 
   setPatientInfo, 
+  uploadedImage,
+  onImageSelected,
+  onClearImage,
+  screeningResult, 
   onRunScreening, 
   isProcessing,
   onOpenPdfModal
 }) {
-  const [retakeTriggered, setRetakeTriggered] = useState(false);
+  const fileInputRef = useRef(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  const isUngradable = presetData.grade === 'ungradable';
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      onImageSelected(file, previewUrl, file.name);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      onImageSelected(file, previewUrl, file.name);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const isUngradable = screeningResult && !screeningResult.iqaPass;
 
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto' }}>
       {/* Patient Header Card */}
       <div className="card" style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '12px' }}>
+        <h2 className="text-h2" style={{ marginBottom: '12px' }}>
           1. Patient Registration & Tagging
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -56,93 +88,175 @@ export default function HealthWorkerMode({
       {/* Retinal Capture Card */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 800 }}>2. Retinal Image Ingestion</h2>
+          <h2 className="text-h2">2. Retinal Image Ingestion</h2>
           <span className="badge badge-neutral">Eye: Left Eye (OS)</span>
         </div>
 
-        <div className="image-canvas-wrapper" style={{ height: '280px', marginBottom: '14px' }}>
-          <img
-            src={presetData.rawImg}
-            alt="Fundus Capture"
-            className="retina-img"
-          />
-        </div>
-
-        {/* Quality Triage Banner */}
-        {isUngradable ? (
-          <div style={{
-            backgroundColor: 'var(--status-danger-bg)',
-            border: '1px solid var(--status-danger-border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            marginBottom: '14px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px'
-          }}>
-            <AlertCircle color="#DC2626" size={24} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <div style={{ color: '#991B1B', fontWeight: 800, fontSize: '13px' }}>
-                🛑 RETAKE SCAN REQUIRED (Quality Failed)
+        {/* Upload Dropzone when no image is loaded */}
+        {!uploadedImage?.previewUrl ? (
+          <div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <div
+              className={`dropzone ${isDragOver ? 'drag-active' : ''}`}
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--brand-light)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '4px'
+              }}>
+                <Upload size={24} color="var(--brand-primary)" />
               </div>
-              <div style={{ color: '#B91C1C', fontSize: '12px', marginTop: '2px' }}>
-                The captured scan is blurry and underexposed. Please steady the camera and click again now before the patient leaves.
+              <div className="text-body" style={{ fontWeight: 700 }}>
+                Click to upload or drag & drop fundus scan
               </div>
-              <button
-                className="btn btn-danger"
-                style={{ marginTop: '10px', padding: '6px 12px', fontSize: '12px' }}
-                onClick={() => alert("Prompting Camera to Recapture Image...")}
-              >
-                <RefreshCw size={14} /> Recapture Eye Photo
-              </button>
+              <div className="text-micro" style={{ color: 'var(--text-muted)' }}>
+                Supports PNG, JPG, or DICOM exports (Standard 45° FOV)
+              </div>
+              <div style={{ marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline text-micro"
+                  style={{ padding: '6px 12px' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onImageSelected(null, '/assets/grade2_raw.png', 'sample_retina_scan.png');
+                  }}
+                >
+                  <ImageIcon size={13} /> Or Load Sample Fundus Scan
+                </button>
+              </div>
             </div>
           </div>
         ) : (
-          <div style={{
-            backgroundColor: 'var(--status-pass-bg)',
-            border: '1px solid var(--status-pass-border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '10px 14px',
-            marginBottom: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <CheckCircle2 color="#16A34A" size={20} />
-            <div>
-              <div style={{ color: '#166534', fontWeight: 700, fontSize: '12px' }}>
-                IMAGE QUALITY APPROVED (Q = {presetData.iqaScore})
-              </div>
-              <div style={{ color: '#15803D', fontSize: '11px' }}>
-                Focus and illumination verified. Ready for diagnostic grading.
-              </div>
+          /* Active Retinal Scan View */
+          <div>
+            <div className="image-canvas-wrapper" style={{ height: '280px', marginBottom: '12px' }}>
+              <img
+                src={uploadedImage.previewUrl}
+                alt="Fundus Capture"
+                className="retina-img"
+              />
             </div>
-          </div>
-        )}
 
-        {!isUngradable && (
-          <button
-            id="btn-run-screening"
-            className="btn btn-primary btn-lg"
-            style={{ width: '100%' }}
-            onClick={onRunScreening}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <>
-                <RefreshCw size={18} className="spin-icon" /> Running AI Analysis...
-              </>
-            ) : (
-              '⚡ Process Scan & Grade Retinopathy'
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '14px',
+              padding: '6px 10px',
+              backgroundColor: 'var(--bg-subtle)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-light)'
+            }}>
+              <span className="text-micro" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+                📁 {uploadedImage.name || 'Retinal Scan Loaded'}
+              </span>
+              <button
+                type="button"
+                className="btn btn-outline text-micro"
+                style={{ padding: '3px 8px' }}
+                onClick={onClearImage}
+                disabled={isProcessing}
+              >
+                <RefreshCw size={11} /> Change Scan
+              </button>
+            </div>
+
+            {/* Quality Triage Banner (Shown only after screening has run) */}
+            {screeningResult && (
+              isUngradable ? (
+                <div style={{
+                  backgroundColor: 'var(--status-danger-bg)',
+                  border: '1px solid var(--status-danger-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px 16px',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px'
+                }}>
+                  <AlertCircle color="#DC2626" size={24} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <div className="text-body" style={{ color: '#991B1B', fontWeight: 800 }}>
+                      🛑 RETAKE SCAN REQUIRED (Quality Failed)
+                    </div>
+                    <div className="text-caption" style={{ color: '#B91C1C', marginTop: '2px' }}>
+                      The captured scan is blurry or underexposed (Q = {screeningResult.qScore || screeningResult.iqaScore}). Please steady camera and recapture before the patient leaves.
+                    </div>
+                    <button
+                      className="btn btn-danger text-caption"
+                      style={{ marginTop: '10px', padding: '6px 12px' }}
+                      onClick={onClearImage}
+                    >
+                      <RefreshCw size={14} /> Recapture Eye Photo
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  backgroundColor: 'var(--status-pass-bg)',
+                  border: '1px solid var(--status-pass-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '10px 14px',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <CheckCircle2 color="#16A34A" size={20} />
+                  <div>
+                    <div className="text-caption" style={{ color: '#166534', fontWeight: 700 }}>
+                      IMAGE QUALITY APPROVED (Q = {screeningResult.iqaScore})
+                    </div>
+                    <div className="text-micro" style={{ color: '#15803D' }}>
+                      Focus and illumination verified. Ready for diagnostic grading.
+                    </div>
+                  </div>
+                </div>
+              )
             )}
-          </button>
+
+            {/* Run Screening Action Button */}
+            {!screeningResult && (
+              <button
+                id="btn-run-screening"
+                className="btn btn-primary btn-lg"
+                style={{ width: '100%' }}
+                onClick={onRunScreening}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw size={18} className="spin-icon" /> Running AI Analysis...
+                  </>
+                ) : (
+                  '⚡ Process Scan & Grade Retinopathy'
+                )}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Result Card (When Not Ungradable) */}
-      {!isUngradable && (
+      {/* Result Card (When Screened & Passed IQA) */}
+      {screeningResult && !isUngradable && (
         <div className="card" style={{ marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '12px' }}>
+          <h2 className="text-h2" style={{ marginBottom: '12px' }}>
             3. Diagnostic Finding & Clinical Action
           </h2>
 
@@ -150,17 +264,17 @@ export default function HealthWorkerMode({
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-md)',
             padding: '14px',
-            backgroundColor: presetData.referable ? 'var(--status-warn-bg)' : 'var(--status-pass-bg)',
+            backgroundColor: screeningResult.referable ? 'var(--status-warn-bg)' : 'var(--status-pass-bg)',
             marginBottom: '16px'
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            <div className="text-micro" style={{ fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
               ICDR Severity Grading
             </div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
-              {presetData.gradeTitle}
+            <div className="text-h1" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
+              {screeningResult.gradeTitle}
             </div>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: presetData.referable ? '#B45309' : '#15803D', marginTop: '4px' }}>
-              {presetData.actionRecommendation}
+            <div className="text-caption" style={{ fontWeight: 700, color: screeningResult.referable ? '#B45309' : '#15803D', marginTop: '4px' }}>
+              {screeningResult.actionRecommendation}
             </div>
           </div>
 

@@ -78,6 +78,32 @@ export default function JudgeInspectorMode({
         </button>
       </div>
 
+      {isProcessing && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 14px',
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-strong)',
+          borderRadius: 'var(--radius-sm)',
+          marginBottom: '12px',
+          fontSize: '11px',
+          color: 'var(--text-secondary)',
+          animation: 'drishya-fade-in 0.2s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <RefreshCw size={12} className="spin-icon" style={{ color: 'var(--brand-primary)' }} />
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+              Executing {steps.find((s) => s.id === currentStep)?.label || 'AI Pipeline'}...
+            </span>
+          </div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)' }}>
+            Stage {Math.min(currentStep, 6)} of 6
+          </span>
+        </div>
+      )}
+
       {/* Main Diagnostic Workstation Grid */}
       <div className="grid-2">
         {/* Left Column: Retinal Visual Workspace */}

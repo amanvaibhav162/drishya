@@ -2,6 +2,45 @@
 import React, { useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone, Calendar, Upload, Image as ImageIcon } from 'lucide-react';
 
+const PIPELINE_STAGES = [
+  {
+    step: 1,
+    title: 'Image Ingestion & Edge IQA',
+    subtext: 'Verifying optical focus, retinal illumination, and field-of-view...',
+    pct: 18,
+  },
+  {
+    step: 2,
+    title: 'Normalization & Preprocessing',
+    subtext: 'Applying CLAHE adaptive histogram and green-channel contrast enhancement...',
+    pct: 38,
+  },
+  {
+    step: 3,
+    title: 'PP-LCNet Deep Multi-Task Inference',
+    subtext: 'Evaluating ICDR severity grading & referable DR probability...',
+    pct: 65,
+  },
+  {
+    step: 4,
+    title: 'Lesion Saliency & Attention Map',
+    subtext: 'Generating Grad-CAM++ neural activation map & localizing microaneurysms...',
+    pct: 85,
+  },
+  {
+    step: 5,
+    title: 'Compiling Certified Clinical Report',
+    subtext: 'Synthesizing biomarker findings and generating audit-ready PDF...',
+    pct: 95,
+  },
+  {
+    step: 6,
+    title: 'Diagnostic Analysis Complete',
+    subtext: 'Finalizing clinical findings and triage delivery...',
+    pct: 100,
+  },
+];
+
 export default function HealthWorkerMode({
   patientInfo,
   setPatientInfo,
@@ -11,6 +50,7 @@ export default function HealthWorkerMode({
   screeningResult,
   onRunScreening,
   isProcessing,
+  currentStep = 1,
   onOpenPdfModal
 }) {
   const fileInputRef = useRef(null);
@@ -45,6 +85,7 @@ export default function HealthWorkerMode({
   };
 
   const isUngradable = screeningResult && !screeningResult.iqaPass;
+  const activeStage = PIPELINE_STAGES[Math.min(Math.max((currentStep || 1) - 1, 0), PIPELINE_STAGES.length - 1)];
 
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto' }}>
@@ -271,23 +312,86 @@ export default function HealthWorkerMode({
               )
             )}
 
-            {/* Run Screening Action Button */}
+            {/* Run Screening Action Button / Dynamic Pipeline Progress Card */}
             {!screeningResult && (
-              <button
-                id="btn-run-screening"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%' }}
-                onClick={onRunScreening}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <RefreshCw size={18} className="spin-icon" /> Running AI Analysis...
-                  </>
-                ) : (
-                  'Process Scan & Grade Retinopathy'
-                )}
-              </button>
+              isProcessing ? (
+                <div className="processing-card" id="screening-progress-card">
+                  {/* Header: Rotating Spinner, Live Title & Progress Percent */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <RefreshCw size={15} className="spin-icon" style={{ color: 'var(--brand-primary)' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+                        AI Screening Pipeline Active
+                      </span>
+                    </div>
+                    <div style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '2px 8px'
+                    }}>
+                      {activeStage.pct}%
+                    </div>
+                  </div>
+
+                  {/* Animated Progress Bar Track */}
+                  <div className="progress-track" style={{ marginBottom: '10px' }}>
+                    <div
+                      className="progress-bar-fill"
+                      style={{ width: `${activeStage.pct}%` }}
+                    >
+                      <div className="progress-shimmer" />
+                    </div>
+                  </div>
+
+                  {/* Dynamic Stage Title and Counter */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+                      {activeStage.title}
+                    </span>
+                    <span className="text-micro" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                      Stage {Math.min(currentStep || 1, 5)} of 5
+                    </span>
+                  </div>
+
+                  {/* Real-time Explanatory Subtext */}
+                  <div className="text-micro" style={{ color: 'var(--text-secondary)', marginBottom: '12px', minHeight: '18px' }}>
+                    {activeStage.subtext}
+                  </div>
+
+                  {/* 5-Stage Micro Segment Indicators */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px' }}>
+                    {[1, 2, 3, 4, 5].map((sNum) => {
+                      const isDone = (currentStep || 1) > sNum;
+                      const isCurrent = (currentStep || 1) === sNum;
+                      return (
+                        <div
+                          key={sNum}
+                          style={{
+                            height: '4px',
+                            borderRadius: '2px',
+                            backgroundColor: isDone ? '#0F172A' : (isCurrent ? '#475569' : '#E2E8F0'),
+                            transition: 'background-color 0.3s ease'
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  id="btn-run-screening"
+                  className="btn btn-primary btn-lg"
+                  style={{ width: '100%' }}
+                  onClick={onRunScreening}
+                >
+                  Process Scan & Grade Retinopathy
+                </button>
+              )
             )}
           </div>
         )}

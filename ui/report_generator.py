@@ -58,8 +58,6 @@ GREEN_MAIN  = colors.HexColor('#16A34A')
 GREEN_BG    = colors.HexColor('#F0FDF4')
 GREEN_BORDER= colors.HexColor('#BBF7D0')
 
-TEAL_ACCENT = colors.HexColor('#0D9488')
-
 
 def _draw_page_decorations(canvas, doc):
     """
@@ -161,7 +159,7 @@ def generate_clinical_pdf(
 
     title_block = [
         Paragraph("Drishya Diagnostic Report", s_report_title),
-        Paragraph("<font color='#0D9488'>●</font> <b>FINAL CLINICAL EVALUATION</b> &nbsp;|&nbsp; AUDIT CERTIFIED", s_report_badge)
+        Paragraph("<font color='#0F172A'>●</font> <b>FINAL CLINICAL EVALUATION</b> &nbsp;|&nbsp; AUDIT CERTIFIED", s_report_badge)
     ]
 
     header_table = Table([[brand_block, title_block]], colWidths=[W * 0.48, W * 0.52])
@@ -250,7 +248,62 @@ def generate_clinical_pdf(
     story.append(Spacer(1, 5))
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # 3. RESULTS & CLINICAL TRIAGE
+    # 3. PHOTOS OF RETINA IN A ROW (Preprocessed, Lesions, Grad-CAM++)
+    # ═══════════════════════════════════════════════════════════════════════════
+    img_dim = 135  # square image dimensions
+
+    def _frame_image(img_path, caption_title, caption_sub, w, h):
+        if os.path.exists(img_path):
+            img_obj = RLImage(img_path, width=w, height=h)
+        else:
+            img_obj = Paragraph("<i>Image not available</i>", s_cap_sub)
+        
+        card = Table([
+            [img_obj],
+            [Paragraph(caption_title, s_cap_title)],
+            [Paragraph(caption_sub, s_cap_sub)]
+        ], colWidths=[w + 8])
+        card.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+            ('BOX', (0, 0), (-1, 0), 0.5, SLATE_300),
+        ]))
+        return card
+
+    card_prep = _frame_image(panel_paths.get('preprocessed', ''), "<b>(a) Preprocessed Retina</b>", "1:1 crop • CLAHE normalized", img_dim, img_dim)
+    card_lesions = _frame_image(panel_paths.get('lesions', ''), "<b>(b) Detected Lesions</b>", "MA (Red) • EX (Yel) • HE (Crimson)", img_dim, img_dim)
+    card_gradcam = _frame_image(panel_paths.get('gradcam', ''), "<b>(c) Grad-CAM++ Attention</b>", "Neural saliency focus areas", img_dim, img_dim)
+
+    photos_table = Table([[card_prep, card_lesions, card_gradcam]], colWidths=[W / 3.0, W / 3.0, W / 3.0])
+    photos_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+
+    photos_section = Table([
+        [_make_banner("3 FUNDUS PANELS EVALUATED IN SCREENING", W)],
+        [photos_table],
+        [Paragraph("<i>Image labeling and heatmaps are for explanatory guidance only and should not be used as independent diagnostic markers.</i>", s_footnote)]
+    ], colWidths=[W])
+    photos_section.setStyle(TableStyle([
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+    ]))
+    story.append(photos_section)
+    story.append(Spacer(1, 5))
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 4. RESULTS & CLINICAL TRIAGE SECTION (BELOW PHOTOS)
     # ═══════════════════════════════════════════════════════════════════════════
     is_referable = diagnostic_result.get('grade_num', 0) >= 2
     verdict_text = "REFERRAL RECOMMENDED" if is_referable else "NO REFERRAL NEEDED"
@@ -258,8 +311,8 @@ def generate_clinical_pdf(
     verdict_bg = RED_BG if is_referable else GREEN_BG
     verdict_border = RED_BORDER if is_referable else GREEN_BORDER
 
-    res_w_left = W * 0.51
-    res_w_right = W * 0.49
+    res_w_left = W * 0.53
+    res_w_right = W * 0.47
 
     diag_banner = Table([[Paragraph("<b>DIAGNOSTIC RESULTS & CLINICAL TRIAGE</b>", s_banner_text), ""]], colWidths=[res_w_left, res_w_right])
     diag_banner.setStyle(TableStyle([
@@ -278,25 +331,25 @@ def generate_clinical_pdf(
         _info_cell("CARE PLAN", diagnostic_result.get('action_followup', 'Routine Rescreening in 12 Months')),
         _info_cell("AI INTERPRETATION", "Autonomous deep neural interpretation via DRISHYA Retinal Engine v1.0."),
     ]
-    t_diag_left = Table(diag_left_data, colWidths=[res_w_left * 0.34, res_w_left * 0.66], rowHeights=[18.5, 18.5, 18.5, 18.5])
+    t_diag_left = Table(diag_left_data, colWidths=[res_w_left * 0.32, res_w_left * 0.68], rowHeights=[17, 17, 17, 17])
     t_diag_left.setStyle(TableStyle([
         ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
         ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
         ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
         ('LEFTPADDING', (0, 0), (-1, -1), 4),
         ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
     # Clinical Verdict Card
     s_verdict_sub = ParagraphStyle('VerdictSub', fontName=FONT_BOLD, fontSize=6.5, leading=8.5, textColor=SLATE_600, alignment=1)
-    s_verdict_main = ParagraphStyle('VerdictMain', fontName=FONT_BOLD, fontSize=15, leading=18, textColor=verdict_color, alignment=1)
+    s_verdict_main = ParagraphStyle('VerdictMain', fontName=FONT_BOLD, fontSize=14, leading=17, textColor=verdict_color, alignment=1)
     s_verdict_action = ParagraphStyle('VerdictAction', fontName=FONT_BOLD, fontSize=6.8, leading=8.8, textColor=verdict_color, alignment=1)
     s_verdict_meta = ParagraphStyle('VerdictMeta', fontName=FONT_REGULAR, fontSize=6.0, leading=8.0, textColor=SLATE_600, alignment=1)
 
-    triage_sub = diagnostic_result.get('triage_sub', 'Evaluation Recommended')
+    triage_sub = diagnostic_result.get('triage_sub', 'Specialist Slit-Lamp Exam Recommended' if is_referable else 'Routine Primary Care Screening')
     conf_str = diagnostic_result.get('confidence', '96.4%')
     iqa_str = diagnostic_result.get('iqa_status', 'Pass')
     grade_num = diagnostic_result.get('grade_num', 2)
@@ -307,7 +360,7 @@ def generate_clinical_pdf(
         [Paragraph(f"<b>Protocol:</b> {triage_sub}", s_verdict_action)],
         [Paragraph(f"<b>ICDR Grade {grade_num}</b> &nbsp;|&nbsp; Confidence: {conf_str} &nbsp;|&nbsp; IQA: {iqa_str}", s_verdict_meta)]
     ]
-    t_verdict = Table(verdict_card_data, colWidths=[res_w_right], rowHeights=[14, 25, 17, 18])
+    t_verdict = Table(verdict_card_data, colWidths=[res_w_right], rowHeights=[13, 23, 16, 16])
     t_verdict.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), verdict_bg),
         ('BOX', (0, 0), (-1, -1), 0.7, verdict_border),
@@ -332,141 +385,61 @@ def generate_clinical_pdf(
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     story.append(results_grid)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # 4. BOTTOM HALF – AI Facts & Biomarkers (left) + Fundus Panels (right)
+    # 5. AI SPECIFICATIONS & QUANTITATIVE BIOMARKERS (2-COLUMN BALANCED TABLE)
     # ═══════════════════════════════════════════════════════════════════════════
-    ai_col_w = W * 0.47
-    img_col_w = W * 0.53
-
-    # -- AI Facts & Biomarkers Table --
-    ai_facts_data = [
-        ("AI SPECIFICATION", ""),
-        ("Autonomous Engine", "DRISHYA Retinal AI v1.0"),
-        ("Model Architecture", "PP-LCNet Student Multi-Task (3.29M params)"),
-        ("Target Condition", "Diabetic Retinopathy & DME"),
-        ("Intended Use", "Adult Diabetic Patients (Rx Only)"),
-        ("", ""),
-        ("QUANTITATIVE BIOMARKERS", ""),
-        ("Microaneurysms (MA)", biomarker_metrics.get('mas', '0 detected')),
-        ("Exudate Area (EX)", biomarker_metrics.get('exudates', '0.00% area')),
-        ("Hemorrhage Quadrants (HE)", biomarker_metrics.get('hemorrhages', '0 quadrants')),
-        ("Macular Risk Status", biomarker_metrics.get('macula', 'Low Risk')),
-        ("", ""),
-        ("VALIDATION BENCHMARKS", ""),
-        ("Confidence Score", diagnostic_result.get('confidence', '96.4%')),
-        ("Clinical Sensitivity", biomarker_metrics.get('sensitivity', '94.2%')),
-        ("Clinical Specificity", biomarker_metrics.get('specificity', '91.8%')),
-        ("Gradability Rate", biomarker_metrics.get('diagnosability', '96.0%')),
+    half_w = W * 0.5
+    bio_data = [
+        _info_cell("Microaneurysms (MA)", biomarker_metrics.get('mas', '0 detected')),
+        _info_cell("Exudate Area (EX)", biomarker_metrics.get('exudates', '0.00% area')),
+        _info_cell("Hemorrhage Quadrants", biomarker_metrics.get('hemorrhages', '0 quadrants')),
+        _info_cell("Macular Edema Risk", biomarker_metrics.get('macula', 'Low Risk')),
     ]
-
-    ai_rows = []
-    for label, val in ai_facts_data:
-        if val == "" and label != "":
-            ai_rows.append([Paragraph(f"<b>{label}</b>", s_cell_bold), Paragraph("", s_cell)])
-        elif label == "" and val == "":
-            continue
-        else:
-            val_style = s_cell_bold if any(k in label for k in ["Score", "Sensitivity", "Microaneurysms", "Macular"]) else s_cell
-            ai_rows.append([Paragraph(label, s_cell), Paragraph(str(val), val_style)])
-
-    t_ai_facts = Table(ai_rows, colWidths=[ai_col_w * 0.48, ai_col_w * 0.52])
-    t_ai_facts.setStyle(TableStyle([
+    t_bio = Table(bio_data, colWidths=[half_w * 0.42, half_w * 0.58], rowHeights=[14.5, 14.5, 14.5, 14.5])
+    t_bio.setStyle(TableStyle([
         ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
         ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
-        ('LEFTPADDING', (0, 0), (-1, -1), 3.5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 3.5),
-        ('TOPPADDING', (0, 0), (-1, -1), 2.2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.2),
+        ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND', (0, 0), (-1, 0), SLATE_100),
-        ('BACKGROUND', (0, 5), (-1, 5), SLATE_100),
-        ('BACKGROUND', (0, 10), (-1, 10), SLATE_100),
     ]))
 
-    ai_column: list[Flowable] = [
-        _make_banner("AUGMENTED INTELLIGENCE FACTS", ai_col_w),
-        Spacer(1, 2),
-        Paragraph("<i>Validated model parameters and autonomous clinical performance.</i>",
-                  ParagraphStyle('AINote', fontName=FONT_ITALIC, fontSize=5.8, leading=7.5, textColor=SLATE_500)),
-        Spacer(1, 2),
-        t_ai_facts
+    bench_data = [
+        _info_cell("Autonomous Engine", "DRISHYA PP-LCNet MTL (3.29M params)"),
+        _info_cell("Clinical Sensitivity", biomarker_metrics.get('sensitivity', '94.2%')),
+        _info_cell("Clinical Specificity", biomarker_metrics.get('specificity', '91.8%')),
+        _info_cell("Gradability Rate", biomarker_metrics.get('diagnosability', '96.0%')),
     ]
-
-    # -- Fundus Images Column --
-    img_single_w = (img_col_w - 14) / 2.0
-    img_single_h = img_single_w
-
-    def _frame_image(img_path, caption_title, caption_sub, w, h):
-        if os.path.exists(img_path):
-            img_obj = RLImage(img_path, width=w, height=h)
-        else:
-            img_obj = Paragraph("<i>Image not available</i>", s_cap_sub)
-        
-        card = Table([
-            [img_obj],
-            [Paragraph(caption_title, s_cap_title)],
-            [Paragraph(caption_sub, s_cap_sub)]
-        ], colWidths=[w])
-        card.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 0),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-            ('TOPPADDING', (0, 0), (-1, -1), 1),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
-            ('BOX', (0, 0), (-1, 0), 0.5, SLATE_300),
-        ]))
-        return card
-
-    card_prep = _frame_image(panel_paths.get('preprocessed', ''), "<b>(a) Preprocessed Retina</b>", "1:1 crop • CLAHE normalized", img_single_w, img_single_h)
-    card_lesions = _frame_image(panel_paths.get('lesions', ''), "<b>(b) Detected Lesions</b>", "MA (Red) • EX (Yel) • HE (Crimson)", img_single_w, img_single_h)
-
-    row1_table = Table([[card_prep, card_lesions]], colWidths=[img_single_w + 5, img_single_w + 5])
-    row1_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-    ]))
-
-    gradcam_w = img_single_w * 1.25
-    gradcam_h = gradcam_w
-    card_gradcam = _frame_image(panel_paths.get('gradcam', ''), "<b>(c) Grad-CAM++ Attention Saliency</b>", "Deep neural attention focus areas", gradcam_w, gradcam_h)
-
-    gradcam_row = Table([[card_gradcam]], colWidths=[img_col_w])
-    gradcam_row.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    t_bench = Table(bench_data, colWidths=[half_w * 0.38, half_w * 0.62], rowHeights=[14.5, 14.5, 14.5, 14.5])
+    t_bench.setStyle(TableStyle([
+        ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
+        ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
+        ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
     ]))
 
-    img_elements: list[Flowable] = [
-        _make_banner("3 FUNDUS PANELS EVALUATED", img_col_w),
-        Spacer(1, 3),
-        row1_table,
-        Spacer(1, 3),
-        gradcam_row,
-        Spacer(1, 2),
-        Paragraph("<i>Image labeling and heatmaps are for explanatory guidance only.</i>", s_footnote)
-    ]
-
-    bottom_grid = Table([[ai_column, img_elements]], colWidths=[ai_col_w, img_col_w])
-    bottom_grid.setStyle(TableStyle([
+    bio_bench_grid = Table([
+        [_make_banner("QUANTITATIVE RETINAL BIOMARKERS", half_w), _make_banner("AI ENGINE SPECIFICATIONS & BENCHMARKS", half_w)],
+        [t_bio, t_bench]
+    ], colWidths=[half_w, half_w])
+    bio_bench_grid.setStyle(TableStyle([
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
         ('RIGHTPADDING', (0, 0), (-1, -1), 0),
         ('TOPPADDING', (0, 0), (-1, -1), 0),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
-    story.append(bottom_grid)
-    story.append(Spacer(1, 6))
+    story.append(bio_bench_grid)
+    story.append(Spacer(1, 4))
 
     # ═══════════════════════════════════════════════════════════════════════════
     # 5. DISCLAIMER & AUDIT TRAIL

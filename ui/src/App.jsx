@@ -50,10 +50,10 @@ export default function App() {
     setCurrentStep(1);
 
     const stepTimers = [
-      setTimeout(() => setCurrentStep(2), 400),
-      setTimeout(() => setCurrentStep(3), 800),
-      setTimeout(() => setCurrentStep(4), 1200),
-      setTimeout(() => setCurrentStep(5), 1600),
+      setTimeout(() => setCurrentStep(2), 500),
+      setTimeout(() => setCurrentStep(3), 1100),
+      setTimeout(() => setCurrentStep(4), 1900),
+      setTimeout(() => setCurrentStep(5), 2700),
     ];
 
     try {
@@ -128,6 +128,7 @@ export default function App() {
           });
         }
         setCurrentStep(6);
+        await new Promise((resolve) => setTimeout(resolve, 350));
       } else {
         const errorData = await response.json().catch(() => ({}));
         stepTimers.forEach(clearTimeout);
@@ -178,6 +179,7 @@ export default function App() {
               screeningResult={screeningResult}
               onRunScreening={handleRunScreening}
               isProcessing={isProcessing}
+              currentStep={currentStep}
               onOpenPdfModal={() => setShowPdfModal(true)}
             />
           ) : (

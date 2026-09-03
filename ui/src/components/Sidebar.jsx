@@ -18,7 +18,7 @@ export default function Sidebar({ activeMode, setActiveMode, isProcessing }) {
             }}
           />
           <div>
-            <h1 className="brand-title" style={{ fontSize: '17px', margin: 0, lineHeight: 1.2 }}>DRISHYA (दृष्य)</h1>
+            <h1 className="brand-title" style={{ fontSize: '17px', margin: 0, lineHeight: 1.2 }}>दृष्य</h1>
             <p className="brand-subtitle" style={{ margin: 0, fontSize: '11px' }}>Retinal Tele-Screening</p>
           </div>
         </div>

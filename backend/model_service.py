@@ -24,10 +24,63 @@ from backend.model_student import DRISHYAStudentMTL
 from ui.report_generator import generate_clinical_pdf
 
 
+# ── Retinal FOV Masking ───────────────────────────────────────────────────────
+
+def create_fundus_fov_mask(img_bgr, threshold=10):
+    """
+    Creates a binary mask of the circular retinal field-of-view.
+    Retinal disc pixels -> 255, non-retinal black borders -> 0.
+    Prevents background step-edge gradients from corrupting CAM normalization.
+    """
+    if len(img_bgr.shape) == 3:
+        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img_bgr
+
+    _, mask = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if num_labels > 1:
+        largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        mask = np.where(labels == largest, 255, 0).astype(np.uint8)
+
+    erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    mask = cv2.erode(mask, erode_kernel, iterations=1)
+    return mask
+
+
+def apply_fov_mask(heatmap, fov_mask):
+    """
+    Zeros out activations outside the retinal disc and re-normalizes the heatmap
+    to [0, 1] using ONLY the retinal tissue pixels.
+    """
+    h, w = heatmap.shape[:2]
+    mask_resized = cv2.resize(fov_mask, (w, h), interpolation=cv2.INTER_NEAREST)
+    binary_mask = (mask_resized > 127).astype(np.float32)
+
+    masked = heatmap * binary_mask
+    retina_pixels = masked[binary_mask > 0]
+    if len(retina_pixels) > 0 and retina_pixels.max() > 1e-7:
+        min_val = float(retina_pixels.min())
+        max_val = float(retina_pixels.max())
+        if max_val - min_val > 1e-7:
+            masked = (masked - min_val) / (max_val - min_val)
+            masked = np.clip(masked * binary_mask, 0.0, 1.0)
+        else:
+            masked = masked / max_val
+    return masked
+
+
 # ── Grad-CAM++ ───────────────────────────────────────────────────────────────
 
 class GradCAMPlusPlus:
-    """Grad-CAM++ for explainable DR classification on the PP-LCNet encoder."""
+    """
+    Grad-CAM++ for explainable DR classification on the PP-LCNet encoder.
+    Uses 1st, 2nd, and 3rd order gradient approximations (Chattopadhay et al., 2018)
+    for high-fidelity multi-instance lesion localization.
+    """
 
     def __init__(self, model, target_layer):
         self.model = model
@@ -44,13 +97,13 @@ class GradCAMPlusPlus:
     def _backward_hook(self, module, grad_in, grad_out):
         self.gradients = grad_out[0]
 
-    def generate_heatmap(self, input_tensor, target_class):
-        self.model.zero_grad()
+    def generate_heatmap(self, input_tensor, target_class, fov_mask=None):
+        self.model.zero_grad(set_to_none=True)
         output = self.model(input_tensor)
         logits = output[0] if isinstance(output, (tuple, list)) else output
 
         target_score = logits[0, target_class]
-        target_score.backward(retain_graph=True)
+        target_score.backward()
 
         if self.gradients is None or self.activations is None:
             raise RuntimeError("Gradients or activations were not captured.")
@@ -70,14 +123,30 @@ class GradCAMPlusPlus:
         cam = F.interpolate(cam, size=(384, 384), mode='bilinear', align_corners=False)
         cam = cam.squeeze().cpu().numpy()
 
-        cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam) + 1e-8)
+        if fov_mask is not None:
+            cam = apply_fov_mask(cam, fov_mask)
+        else:
+            cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam) + 1e-8)
+
         return cam
 
-    def overlay_on_image(self, rgb_img_384, heatmap, alpha=0.40):
-        heatmap_uint8 = (255 * heatmap).astype(np.uint8)
-        color_heatmap = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
+    def overlay_on_image(self, rgb_img_384, heatmap, alpha=0.40, colormap=cv2.COLORMAP_TURBO, fov_mask=None):
+        """
+        Overlays the saliency map onto the fundus scan using a medically uniform colormap.
+        Ensures the background outside the retinal disc remains uncolored.
+        """
+        heatmap_uint8 = (255 * np.clip(heatmap, 0.0, 1.0)).astype(np.uint8)
+        color_heatmap = cv2.applyColorMap(heatmap_uint8, colormap)
         color_heatmap = cv2.cvtColor(color_heatmap, cv2.COLOR_BGR2RGB)
+
         blended = cv2.addWeighted(rgb_img_384, 1.0 - alpha, color_heatmap, alpha, 0)
+
+        if fov_mask is not None:
+            mask_resized = cv2.resize(fov_mask, (rgb_img_384.shape[1], rgb_img_384.shape[0]), interpolation=cv2.INTER_NEAREST)
+            bg_pixels = (mask_resized <= 127)
+            color_heatmap[bg_pixels] = 0
+            blended[bg_pixels] = rgb_img_384[bg_pixels]
+
         return blended, color_heatmap
 
 
@@ -293,8 +362,11 @@ class ModelService:
         mask_probs = torch.sigmoid(mask_logits).detach().cpu().numpy()[0]  # (4, 384, 384)
 
         # ── 4. Grad-CAM++ Explainability ─────────────────────────────────────
-        heatmap = self.gradcam.generate_heatmap(tensor_in, target_class=pred_class)
-        blended_cam_rgb, heatmap_only = self.gradcam.overlay_on_image(rgb_384, heatmap, alpha=0.40)
+        fov_mask = create_fundus_fov_mask(raw_384_bgr)
+        heatmap = self.gradcam.generate_heatmap(tensor_in, target_class=pred_class, fov_mask=fov_mask)
+        blended_cam_rgb, heatmap_only = self.gradcam.overlay_on_image(
+            rgb_384, heatmap, alpha=0.40, colormap=cv2.COLORMAP_TURBO, fov_mask=fov_mask
+        )
 
         # ── 5. Biomarker Extraction ──────────────────────────────────────────
         biomarkers = extract_biomarkers(mask_probs)
@@ -310,11 +382,13 @@ class ModelService:
         raw_path = os.path.join(output_dir, f"{timestamp}_raw.png")
         prep_path = os.path.join(output_dir, f"{timestamp}_prep.png")
         lesion_path = os.path.join(output_dir, f"{timestamp}_lesions.png")
+        heatmap_path = os.path.join(output_dir, f"{timestamp}_heatmap.png")
         gradcam_path = os.path.join(output_dir, f"{timestamp}_gradcam.png")
 
         cv2.imwrite(raw_path, raw_384_bgr)
         cv2.imwrite(prep_path, preprocessed_bgr)
         cv2.imwrite(lesion_path, lesion_overlay_bgr)
+        cv2.imwrite(heatmap_path, cv2.cvtColor(heatmap_only, cv2.COLOR_RGB2BGR))
         cv2.imwrite(gradcam_path, cv2.cvtColor(blended_cam_rgb, cv2.COLOR_RGB2BGR))
 
         # ── 8. Clinical Grading & Triage ─────────────────────────────────────
@@ -393,6 +467,7 @@ class ModelService:
                 "raw_path": raw_path,
                 "preprocessed_path": prep_path,
                 "lesion_path": lesion_path,
+                "heatmap_path": heatmap_path,
                 "gradcam_path": gradcam_path,
                 "pdf_report_path": pdf_path
             }

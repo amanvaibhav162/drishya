@@ -1,14 +1,15 @@
-import React, { useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone, Upload, Image as ImageIcon } from 'lucide-react';
 
-export default function HealthWorkerMode({ 
-  patientInfo, 
-  setPatientInfo, 
+import React, { useRef, useState } from 'react';
+import { AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone, Calendar, Upload, Image as ImageIcon } from 'lucide-react';
+
+export default function HealthWorkerMode({
+  patientInfo,
+  setPatientInfo,
   uploadedImage,
   onImageSelected,
   onClearImage,
-  screeningResult, 
-  onRunScreening, 
+  screeningResult,
+  onRunScreening,
   isProcessing,
   onOpenPdfModal
 }) {
@@ -52,7 +53,7 @@ export default function HealthWorkerMode({
         <h2 className="text-h2" style={{ marginBottom: '12px' }}>
           1. Patient Registration & Tagging
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', marginBottom: '12px' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <User size={12} style={{ display: 'inline', marginRight: '4px' }} />
@@ -80,6 +81,58 @@ export default function HealthWorkerMode({
               value={patientInfo.phone}
               onChange={(e) => setPatientInfo({ ...patientInfo, phone: e.target.value })}
               placeholder="+91 98765 43210"
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 1.3fr', gap: '12px' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">
+              <Calendar size={12} style={{ display: 'inline', marginRight: '4px' }} />
+              Age (Years)
+            </label>
+            <input
+              id="input-patient-age"
+              type="number"
+              min="1"
+              max="120"
+              className="form-input"
+              value={patientInfo.age}
+              onChange={(e) => setPatientInfo({ ...patientInfo, age: e.target.value })}
+              placeholder="e.g. 54"
+            />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">
+              <User size={12} style={{ display: 'inline', marginRight: '4px' }} />
+              Gender
+            </label>
+            <select
+              id="input-patient-gender"
+              className="form-input"
+              value={patientInfo.gender || 'Male'}
+              onChange={(e) => setPatientInfo({ ...patientInfo, gender: e.target.value })}
+              style={{ cursor: 'pointer' }}
+            >
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">
+              <FileText size={12} style={{ display: 'inline', marginRight: '4px' }} />
+              ABHA ID
+            </label>
+            <input
+              id="input-patient-abha"
+              type="text"
+              className="form-input"
+              value={patientInfo.abhaId}
+              onChange={(e) => setPatientInfo({ ...patientInfo, abhaId: e.target.value })}
+              placeholder="91-4820-1940-52"
             />
           </div>
         </div>
@@ -126,19 +179,6 @@ export default function HealthWorkerMode({
               </div>
               <div className="text-micro" style={{ color: 'var(--text-muted)' }}>
                 Supports PNG, JPG, or DICOM exports (Standard 45° FOV)
-              </div>
-              <div style={{ marginTop: '10px' }}>
-                <button
-                  type="button"
-                  className="btn btn-outline text-micro"
-                  style={{ padding: '6px 12px' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onImageSelected(null, '/assets/grade2_raw.png', 'sample_retina_scan.png');
-                  }}
-                >
-                  <ImageIcon size={13} /> Or Load Sample Fundus Scan
-                </button>
               </div>
             </div>
           </div>
@@ -245,7 +285,7 @@ export default function HealthWorkerMode({
                     <RefreshCw size={18} className="spin-icon" /> Running AI Analysis...
                   </>
                 ) : (
-                  '⚡ Process Scan & Grade Retinopathy'
+                  'Process Scan & Grade Retinopathy'
                 )}
               </button>
             )}

@@ -2,9 +2,10 @@ from typing import Any, Dict
 import os
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from pathlib import Path
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import PORT
@@ -43,9 +44,11 @@ def health_check():
 @app.post("/api/screen-patient")
 async def screen_patient(
     file: UploadFile = File(...),
-    name: str = Form("Ramesh Kumar"),
-    phone: str = Form("+91 98765 43210"),
-    abha_id: str = Form("91-4820-1940-52")
+    name: str = Form("Anonymous Patient"),
+    age: str = Form("N/A"),
+    gender: str = Form("N/A"),
+    phone: str = Form("N/A"),
+    abha_id: str = Form("N/A")
 ):
     """
     Receives patient fundus scan, runs IQA, AI Grading, Grad-CAM++, generates PDF, and syncs to Supabase.
@@ -58,10 +61,29 @@ async def screen_patient(
         if img_bgr is None:
             raise HTTPException(status_code=400, detail="Invalid image file format.")
 
+        patient_name = name.strip() if name and name.strip() else "Anonymous Patient"
+        patient_age = age.strip() if age and age.strip() else "N/A"
+        patient_gender = gender.strip() if gender and gender.strip() else "N/A"
+        patient_phone = phone.strip() if phone and phone.strip() else "N/A"
+        patient_abha = abha_id.strip() if abha_id and abha_id.strip() else "N/A"
+
+        # Format age / sex string for clinical report
+        if patient_age != "N/A" and patient_gender != "N/A":
+            age_sex_str = f"{patient_age} Yrs / {patient_gender}"
+        elif patient_age != "N/A":
+            age_sex_str = f"{patient_age} Yrs"
+        elif patient_gender != "N/A":
+            age_sex_str = patient_gender
+        else:
+            age_sex_str = "Adult Screening"
+
         patient_info = {
-            "name": name,
-            "phone": phone,
-            "abha_id": abha_id,
+            "name": patient_name,
+            "age": patient_age,
+            "gender": patient_gender,
+            "age_sex": age_sex_str,
+            "phone": patient_phone,
+            "abha_id": patient_abha,
             "eye": "Left Eye (OS)",
             "center": "PHC Rampur | Rural Eye Care Hub"
         }
@@ -80,12 +102,19 @@ async def screen_patient(
 
         supabase_pdf_url = upload_file_to_supabase(pdf_path, STORAGE_BUCKET_REPORTS, pdf_filename)
         supabase_img_url = upload_file_to_supabase(gradcam_path, STORAGE_BUCKET_IMAGES, gradcam_filename)
+        
+        heatmap_path = files.get("heatmap_path", "")
+        if heatmap_path:
+            heatmap_filename = os.path.basename(heatmap_path)
+            upload_file_to_supabase(heatmap_path, STORAGE_BUCKET_IMAGES, heatmap_filename)
 
         biomarkers = result.get("biomarkers", {})
         db_record = {
-            "patient_name": name,
-            "patient_phone": phone,
-            "abha_id": abha_id,
+            "patient_name": patient_name,
+            "patient_age": patient_age,
+            "patient_gender": patient_gender,
+            "patient_phone": patient_phone,
+            "abha_id": patient_abha,
             "icdr_grade": result.get("grade"),
             "grade_title": result.get("grade_title"),
             "confidence": result.get("confidence"),
@@ -132,6 +161,49 @@ def download_report(filename: str):
     )
 
 
+# ── Production UI Serving ─────────────────────────────────────────────────────
+# After `npm run build`, the React SPA lives in ui/dist/.
+# We serve it directly from FastAPI so the entire app runs on a single port.
+# The catch-all route below handles both Vite bundles and public assets.
+
+UI_DIST = Path("ui/dist")
+UI_PUBLIC_ASSETS = Path("ui/public/assets")
+
+
+
+@app.get("/{full_path:path}")
+async def serve_spa(request: Request, full_path: str):
+    """
+    SPA catch-all: serves the React index.html for any non-API, non-static route.
+    This enables client-side routing (React Router, hash routing, etc.).
+    """
+    # Try to serve static files from ui/dist first
+    static_file = UI_DIST / full_path
+    if static_file.is_file():
+        return FileResponse(str(static_file))
+
+    # Try ui/public/assets
+    public_file = UI_PUBLIC_ASSETS / full_path.removeprefix("assets/")
+    if public_file.is_file():
+        return FileResponse(str(public_file))
+
+    # Fallback: serve index.html (SPA client-side routing)
+    index_path = UI_DIST / "index.html"
+    if index_path.exists():
+        return HTMLResponse(index_path.read_text())
+
+    # No built UI yet — return a helpful message
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "DRISHYA API is running. Build the UI with: cd ui && npm run build",
+            "api_docs": "/docs",
+            "health": "/api/health"
+        }
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.main:app", host="0.0.0.0", port=PORT, reload=True)
+

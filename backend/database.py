@@ -27,6 +27,15 @@ def save_screening_record(record_data: dict):
         return response.data
     except Exception as e:
         print(f"Error saving record to Supabase DB: {e}")
+        # If columns patient_age / patient_gender are not yet created in remote table, retry without them
+        if "patient_age" in record_data or "patient_gender" in record_data:
+            try:
+                fallback_record = {k: v for k, v in record_data.items() if k not in ("patient_age", "patient_gender")}
+                fallback_resp = supabase.table("screenings").insert(fallback_record).execute()
+                print("✓ Successfully saved record using schema fallback.")
+                return fallback_resp.data
+            except Exception as e2:
+                print(f"Error saving fallback record to Supabase DB: {e2}")
         return None
 
 

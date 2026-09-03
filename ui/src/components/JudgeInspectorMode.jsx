@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Sliders, FileText, Download, Play, RefreshCw, Upload } from 'lucide-react';
 
-export default function JudgeInspectorMode({ 
+export default function JudgeInspectorMode({
   screeningResult,
   uploadedImage,
-  currentStep, 
+  currentStep,
   onRunStepSimulation,
   isProcessing,
-  onOpenPdfModal,
-  onLoadSampleScan
+  onOpenPdfModal
 }) {
   const [activeTab, setActiveTab] = useState('gradcam'); // 'raw', 'preprocessed', 'lesions', 'gradcam'
   const [heatmapOpacity, setHeatmapOpacity] = useState(40); // 0 to 100
@@ -22,73 +21,36 @@ export default function JudgeInspectorMode({
     { id: 6, label: '6. Report Ready' }
   ];
 
-  // Active images
-  const rawImg = screeningResult?.rawImg || uploadedImage?.previewUrl || '/assets/grade2_raw.png';
-  const preprocessedImg = screeningResult?.preprocessedImg || '/assets/grade2_preprocessed.png';
-  const lesionsImg = screeningResult?.lesionsImg || '/assets/grade2_lesions.png';
-  const heatmapImg = screeningResult?.heatmapImg || '/assets/grade2_heatmap.png';
+  // Active images from real screening or loaded scan
+  const rawImg = screeningResult?.rawImg || uploadedImage?.previewUrl || null;
+  const preprocessedImg = screeningResult?.preprocessedImg || null;
+  const lesionsImg = screeningResult?.lesionsImg || null;
+  const heatmapImg = screeningResult?.heatmapImg || null;
 
   const getActiveImage = () => {
     switch (activeTab) {
       case 'raw':
         return rawImg;
       case 'preprocessed':
-        return preprocessedImg;
+        return preprocessedImg || rawImg;
       case 'lesions':
-        return lesionsImg;
+        return lesionsImg || rawImg;
       case 'gradcam':
       default:
-        return preprocessedImg;
+        return preprocessedImg || rawImg;
     }
   };
 
-  const isReferable = screeningResult?.referable ?? true;
-  const gradeTitle = screeningResult?.gradeTitle || 'Grade 2: Moderate NPDR';
-  const gradeDesc = screeningResult?.gradeDesc || 'Non-Proliferative Diabetic Retinopathy (Microaneurysms + Hard Exudates)';
-  const confidence = screeningResult?.confidence || '96.4%';
-  const iqaScore = screeningResult?.iqaScore || '0.88';
-
-  const biomarkers = screeningResult?.biomarkers || {
-    mas: '12 detected',
-    masStatus: 'Moderate',
-    exudates: '1.10% area',
-    exudatesStatus: 'Sup. Arcade',
-    hemorrhages: '2 Quadrants',
-    neovascularization: '0 (Absent)'
-  };
+  const isReferable = screeningResult?.referable ?? false;
+  const gradeTitle = screeningResult?.gradeTitle;
+  const gradeDesc = screeningResult?.gradeDesc;
+  const confidence = screeningResult?.confidence;
+  const iqaScore = screeningResult?.iqaScore;
+  const biomarkers = screeningResult?.biomarkers;
 
   return (
-    <div>
-      {/* Notice Banner if not screened yet */}
-      {!screeningResult && (
-        <div style={{
-          backgroundColor: 'var(--brand-light)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: 'var(--radius-md)',
-          padding: '10px 16px',
-          marginBottom: '16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <span style={{ fontWeight: 700, color: 'var(--brand-dark)' }}>Inspector Mode</span>: 
-            {' '}Visual multi-stage pipeline breakdown (Ingestion → IQA → CLAHE → Swin/EfficientNet → Grad-CAM++).
-          </div>
-          {onLoadSampleScan && (
-            <button
-              type="button"
-              className="btn btn-outline text-micro"
-              style={{ padding: '4px 10px', whiteSpace: 'nowrap' }}
-              onClick={onLoadSampleScan}
-              disabled={isProcessing}
-            >
-              <Upload size={12} /> Ingest Sample Scan
-            </button>
-          )}
-        </div>
-      )}
 
+    <div>
       {/* Pipeline Progress Stepper */}
       <div className="stepper-container">
         {steps.map((s, idx) => {
@@ -110,9 +72,9 @@ export default function JudgeInspectorMode({
           className="btn btn-outline text-micro"
           style={{ padding: '4px 10px', marginLeft: '12px' }}
           onClick={onRunStepSimulation}
-          disabled={isProcessing}
+          disabled={isProcessing || !uploadedImage}
         >
-          {isProcessing ? <RefreshCw size={12} className="spin-icon" /> : <Play size={12} />} Live Stepper
+          {isProcessing ? <RefreshCw size={12} className="spin-icon" /> : <Play size={12} />} Run AI Pipeline
         </button>
       </div>
 
@@ -158,24 +120,36 @@ export default function JudgeInspectorMode({
           </div>
 
           {/* Canvas Viewer */}
-          <div className="image-canvas-wrapper">
-            <img
-              src={getActiveImage()}
-              alt="Retina Stage"
-              className="retina-img"
-            />
-            {activeTab === 'gradcam' && (
-              <img
-                src={heatmapImg}
-                alt="Grad-CAM Saliency"
-                className="heatmap-layer"
-                style={{ opacity: heatmapOpacity / 100 }}
-              />
+          <div className="image-canvas-wrapper" style={{ minHeight: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+            {getActiveImage() ? (
+              <>
+                <img
+                  src={getActiveImage()}
+                  alt="Retina Stage"
+                  className="retina-img"
+                />
+                {activeTab === 'gradcam' && heatmapImg && (
+                  <img
+                    src={heatmapImg}
+                    alt="Grad-CAM Saliency"
+                    className="heatmap-layer"
+                    style={{ opacity: heatmapOpacity / 100 }}
+                  />
+                )}
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px 20px', color: '#94A3B8' }}>
+                <Upload size={36} color="#64748B" style={{ marginBottom: '8px' }} />
+                <div style={{ fontWeight: 700, color: '#E2E8F0', marginBottom: '4px' }}>No Retinal Scan Loaded</div>
+                <div style={{ fontSize: '11px', maxWidth: '260px', margin: '0 auto' }}>
+                  Upload a fundus image in the Health Worker Portal or click Ingest Sample Scan above.
+                </div>
+              </div>
             )}
           </div>
 
           {/* Opacity Slider for Grad-CAM++ */}
-          {activeTab === 'gradcam' && (
+          {activeTab === 'gradcam' && heatmapImg && (
             <div className="slider-control">
               <span style={{ fontWeight: 600, minWidth: '130px' }}>
                 <Sliders size={12} style={{ display: 'inline', marginRight: '4px' }} />
@@ -206,78 +180,112 @@ export default function JudgeInspectorMode({
             Diagnostic Findings & Biomarker Evidence
           </h3>
 
-          {/* Primary Result Box */}
-          <div style={{
-            border: '1px solid var(--border-strong)',
-            borderRadius: 'var(--radius-md)',
-            padding: '14px',
-            backgroundColor: isReferable ? 'var(--status-warn-bg)' : 'var(--status-pass-bg)',
-            marginBottom: '16px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <span className="badge badge-neutral" style={{ marginBottom: '4px' }}>ICDR Severity Classification</span>
-                <div className="text-h1" style={{ color: 'var(--text-primary)' }}>
-                  {gradeTitle}
+          {screeningResult ? (
+            <>
+              {/* Primary Result Box */}
+              <div style={{
+                border: '1px solid var(--border-strong)',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px',
+                backgroundColor: isReferable ? 'var(--status-warn-bg)' : 'var(--status-pass-bg)',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <span className="badge badge-neutral" style={{ marginBottom: '4px' }}>ICDR Severity Classification</span>
+                    <div className="text-h1" style={{ color: 'var(--text-primary)' }}>
+                      {gradeTitle}
+                    </div>
+                    <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
+                      {gradeDesc}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="text-micro" style={{ color: 'var(--text-muted)', fontWeight: 700 }}>AI CONFIDENCE</div>
+                    <div className="text-h1" style={{ color: 'var(--text-primary)' }}>
+                      {confidence}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-                  {gradeDesc}
+
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="text-caption" style={{ fontWeight: 700, color: isReferable ? '#B45309' : '#15803D' }}>
+                    {isReferable ? '⚠️ REFERABLE DR (Specialist Referral Required)' : '🟢 NON-REFERABLE (Routine Screening)'}
+                  </span>
+                  <span className="badge badge-pass">IQA: PASS (Q={iqaScore})</span>
                 </div>
               </div>
 
-              <div style={{ textAlign: 'right' }}>
-                <div className="text-micro" style={{ color: 'var(--text-muted)', fontWeight: 700 }}>AI CONFIDENCE</div>
-                <div className="text-h1" style={{ color: 'var(--text-primary)' }}>
-                  {confidence}
+              {/* Biomarkers Table */}
+              {biomarkers && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div className="text-caption" style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                    Clinical Biomarker Quantification (Causal Evidence)
+                  </div>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Biomarker / Feature</th>
+                        <th>Detected Value</th>
+                        <th>Clinical Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ fontWeight: 600 }}>Microaneurysms (MAs)</td>
+                        <td><b>{biomarkers.mas}</b></td>
+                        <td><span className="badge badge-warn">{biomarkers.masStatus}</span></td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: 600 }}>Hard Exudates (Lipids)</td>
+                        <td><b>{biomarkers.exudates}</b></td>
+                        <td><span className="badge badge-warn">{biomarkers.exudatesStatus}</span></td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: 600 }}>Hemorrhage Spread</td>
+                        <td><b>{biomarkers.hemorrhages}</b></td>
+                        <td><span className="badge badge-neutral">Below 4:2:1 Rule</span></td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: 600 }}>Neovascularization</td>
+                        <td><b>{biomarkers.neovascularization}</b></td>
+                        <td><span className="badge badge-pass">Non-Proliferative</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
+              )}
+            </>
+          ) : (
+            /* Awaiting screening empty state */
+            <div style={{
+              border: '1px dashed var(--border-strong)',
+              borderRadius: 'var(--radius-md)',
+              padding: '36px 20px',
+              textAlign: 'center',
+              backgroundColor: 'var(--bg-subtle)',
+              color: 'var(--text-muted)',
+              marginBottom: '16px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Awaiting AI Pipeline Execution
               </div>
+              <div className="text-caption" style={{ maxWidth: '300px', margin: '0 auto', lineHeight: 1.5 }}>
+                Diagnostic classification, confidence score, and causal biomarkers will appear here once inference completes.
+              </div>
+              {uploadedImage && (
+                <button
+                  className="btn btn-primary text-caption"
+                  style={{ marginTop: '16px' }}
+                  onClick={onRunStepSimulation}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? <RefreshCw size={14} className="spin-icon" /> : <Play size={14} />} Run AI Pipeline
+                </button>
+              )}
             </div>
-
-            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="text-caption" style={{ fontWeight: 700, color: isReferable ? '#B45309' : '#15803D' }}>
-                {isReferable ? '⚠️ REFERABLE DR (Specialist Referral Required)' : '🟢 NON-REFERABLE (Routine Screening)'}
-              </span>
-              <span className="badge badge-pass">IQA: PASS (Q={iqaScore})</span>
-            </div>
-          </div>
-
-          {/* Biomarkers Table */}
-          <div style={{ marginBottom: '16px' }}>
-            <div className="text-caption" style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Clinical Biomarker Quantification (Causal Evidence)
-            </div>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Biomarker / Feature</th>
-                  <th>Detected Value</th>
-                  <th>Clinical Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Microaneurysms (MAs)</td>
-                  <td><b>{biomarkers.mas || '12 detected'}</b></td>
-                  <td><span className="badge badge-warn">{biomarkers.masStatus || 'Moderate'}</span></td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Hard Exudates (Lipids)</td>
-                  <td><b>{biomarkers.exudates || '1.10% area'}</b></td>
-                  <td><span className="badge badge-warn">{biomarkers.exudatesStatus || 'Sup. Arcade'}</span></td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Hemorrhage Spread</td>
-                  <td><b>{biomarkers.hemorrhages || '2 Quadrants'}</b></td>
-                  <td><span className="badge badge-neutral">Below 4:2:1 Rule</span></td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Neovascularization</td>
-                  <td><b>{biomarkers.neovascularization || '0 (Absent)'}</b></td>
-                  <td><span className="badge badge-pass">Non-Proliferative</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          )}
 
           {/* Action Footer */}
           <div style={{ marginTop: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -285,6 +293,7 @@ export default function JudgeInspectorMode({
               id="btn-preview-pdf-inspector"
               className="btn btn-outline"
               onClick={onOpenPdfModal}
+              disabled={!screeningResult}
             >
               <FileText size={16} /> Preview 1-Page PDF
             </button>
@@ -293,6 +302,7 @@ export default function JudgeInspectorMode({
               id="btn-download-pdf-inspector"
               className="btn btn-primary"
               onClick={onOpenPdfModal}
+              disabled={!screeningResult}
             >
               <Download size={16} /> Download Official PDF
             </button>

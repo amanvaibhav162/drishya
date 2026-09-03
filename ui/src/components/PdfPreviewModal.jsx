@@ -86,9 +86,9 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderRight: '1px solid #E2E8F0' }}>
                   {[
-                    ['PATIENT NAME', patientInfo.name],
-                    ['ABHA ID', patientInfo.abhaId],
-                    ['AGE / SEX', '54 Yrs / Male'],
+                    ['PATIENT NAME', patientInfo.name || 'Anonymous Patient'],
+                    ['ABHA ID', patientInfo.abhaId || 'Not Registered'],
+                    ['AGE / SEX', patientInfo.age && patientInfo.gender ? `${patientInfo.age} Yrs / ${patientInfo.gender}` : (patientInfo.age ? `${patientInfo.age} Yrs` : (patientInfo.gender || 'Adult Screening'))],
                     ['RESULT DATE', new Date().toLocaleDateString('en-IN')],
                   ].map(([label, val], i) => (
                     <React.Fragment key={i}>
@@ -409,9 +409,15 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
             className="btn btn-primary"
             style={{ backgroundColor: '#2BA882', borderColor: '#2BA882' }}
             onClick={() => {
+              const pdfUrl = screeningResult.pdfDownloadUrl || screeningResult.pdfUrl;
+              if (!pdfUrl) {
+                alert('No PDF report file available for download.');
+                return;
+              }
               const link = document.createElement('a');
-              link.href = screeningResult.pdfDownloadUrl || screeningResult.pdfUrl || '/assets/DRISHYA_Clinical_Report.pdf';
-              link.download = `DRISHYA_Report_${patientInfo.name.replace(/\s+/g, '_')}.pdf`;
+              link.href = pdfUrl;
+              const safeName = (patientInfo.name || 'Patient').trim().replace(/\s+/g, '_');
+              link.download = `DRISHYA_Report_${safeName}.pdf`;
               link.click();
               onClose();
             }}

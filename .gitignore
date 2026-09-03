@@ -12,11 +12,14 @@ data/raw/
 data/processed/
 data/final_processed/
 data/formated_data_processed/
-models/*.pth
-models/*.pt
-models/*.onnx*
-models/*.data
+models/*
 !models/.gitkeep
+*.pth
+*.pt
+*.onnx*
+*.data
+*.safetensors
+*.bin
 reports/*.pdf
 
 # Generated fundus images & outputs
@@ -37,3 +40,10 @@ slprj/
 .vscode/
 *.log
 .DS_Store
+
+# Environment secrets (real keys stay local)
+backend/.env
+
+# Generated build output & dependencies
+ui/dist/
+node_modules/

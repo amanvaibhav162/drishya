@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import HealthWorkerMode from './components/HealthWorkerMode';
 import JudgeInspectorMode from './components/JudgeInspectorMode';
@@ -13,6 +14,19 @@ function AppContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Automatically fall back to Health Worker portal on screens < 1000px
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1000 && activeMode === 'judge-inspector') {
+        setActiveMode('health-worker');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeMode]);
 
   // Patient registration info
   const [patientInfo, setPatientInfo] = useState({
@@ -153,11 +167,13 @@ function AppContent() {
 
   return (
     <div className="app-container">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (Desktop sidebar or Mobile slide-over drawer) */}
       <Sidebar
         activeMode={activeMode}
         setActiveMode={setActiveMode}
         isProcessing={isProcessing}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Workspace */}
@@ -165,6 +181,15 @@ function AppContent() {
         {/* Top App Bar */}
         <header className="top-bar">
           <div className="top-bar-left">
+            <button
+              type="button"
+              id="btn-hamburger"
+              className="hamburger-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Navigation Menu"
+            >
+              <Menu size={18} />
+            </button>
             <span className="top-title">
               {activeMode === 'health-worker' ? t('top_title_hw') : t('top_title_judge')}
             </span>

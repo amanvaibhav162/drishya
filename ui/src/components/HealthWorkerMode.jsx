@@ -104,7 +104,7 @@ export default function HealthWorkerMode({
         <h2 className="text-h2" style={{ marginBottom: '12px' }}>
           {t('step1_title')}
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', marginBottom: '12px' }}>
+        <div className="patient-form-row-1">
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <User size={12} style={{ display: 'inline', marginRight: '4px' }} />
@@ -136,7 +136,7 @@ export default function HealthWorkerMode({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 1.3fr', gap: '12px' }}>
+        <div className="patient-form-row-2">
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <Calendar size={12} style={{ display: 'inline', marginRight: '4px' }} />
@@ -433,7 +433,7 @@ export default function HealthWorkerMode({
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="action-btn-row">
             <button
               id="btn-preview-pdf"
               className="btn btn-outline"

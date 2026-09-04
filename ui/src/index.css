@@ -712,16 +712,146 @@ body {
   line-height: 1.4;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 900px) {
+/* ── Responsive Form & Button Rows ────────────────────────────────────────── */
+.patient-form-row-1 {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.patient-form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 1.3fr;
+  gap: 12px;
+}
+
+.action-btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ── Hamburger & Drawer Toggle Controls ───────────────────────────────────── */
+.hamburger-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #CBD5E1);
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px;
+  color: var(--text-primary, #0F172A);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.hamburger-btn:hover {
+  background: var(--bg-subtle, #F1F5F9);
+  border-color: var(--border-strong, #94A3B8);
+}
+
+.sidebar-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #CBD5E1);
+  border-radius: 6px;
+  padding: 5px;
+  color: #64748B;
+  cursor: pointer;
+  margin-left: auto;
+  line-height: 0;
+  transition: all 0.15s ease;
+}
+
+.sidebar-close-btn:hover {
+  background: var(--bg-subtle, #F1F5F9);
+  color: #0F172A;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ── Tablet & Small Screens (< 1000px) ─────────────────────────────────────── */
+@media (max-width: 1000px) {
+  /* Show Hamburger button in Header */
+  .hamburger-btn {
+    display: inline-flex;
+  }
+
+  .sidebar-close-btn {
+    display: inline-flex;
+  }
+
+  /* Drawer Backdrop */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Slide-over Sidebar Drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+    border-right: 1px solid var(--border-strong);
+    display: flex;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Remove Judge Inspector Panel on Phones / Small Screens */
+  .nav-item-judge {
+    display: none !important;
+  }
+
   .app-container {
     flex-direction: column;
   }
 
-  .sidebar {
+  .main-content {
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border-strong);
+    min-height: 100vh;
+  }
+
+  .top-bar {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .top-title {
+    font-size: 15px;
   }
 
   .grid-2 {
@@ -735,10 +865,86 @@ body {
   .stepper-container {
     overflow-x: auto;
     gap: 8px;
+    padding-bottom: 4px;
   }
 
   .step-divider {
     display: none;
+  }
+}
+
+/* ── Mobile Phone Viewports (< 640px) ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  .top-bar {
+    padding: 8px 12px;
+  }
+
+  .top-bar-left {
+    gap: 8px;
+  }
+
+  .top-title {
+    font-size: 13.5px;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .workspace {
+    padding: 12px 10px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: var(--radius-md, 8px);
+  }
+
+  .patient-form-row-1,
+  .patient-form-row-2 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .patient-form-row-1 {
+    margin-bottom: 10px;
+  }
+
+  .action-btn-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .language-selector {
+    padding: 2px 4px;
+    gap: 2px;
+  }
+
+  .lang-icon {
+    display: none;
+  }
+
+  .lang-btn {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+
+  .image-canvas-wrapper {
+    height: 220px !important;
+  }
+
+  .modal-overlay {
+    padding: 8px;
+  }
+
+  .modal-card {
+    max-height: 94vh;
+    border-radius: 8px;
+  }
+
+  .modal-body {
+    padding: 12px !important;
   }
 }
 

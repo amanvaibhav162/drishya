@@ -17,7 +17,7 @@ const PIPELINE_STAGES = [
   },
   {
     step: 3,
-    title: 'PP-LCNet Deep Multi-Task Inference',
+    title: 'EfficientNetV2 Deep Multi-Task Inference',
     subtext: 'Evaluating ICDR severity grading & referable DR probability...',
     pct: 65,
   },

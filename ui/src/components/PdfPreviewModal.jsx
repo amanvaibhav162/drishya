@@ -264,7 +264,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 {[
                   ['CONDITION', 'Diabetic Retinopathy (with Macular Risk Assessment)'],
                   ['DIAGNOSIS', screeningResult.gradeDesc || 'No DR detected ETDRS level 20 and lower and no macular edema.'],
-                  ['CARE PLAN', screeningResult.referable ? 'Refer to Ophthalmologist within 3-4 weeks for slit-lamp examination' : 'Routine Rescreening in 12 Months'],
+                  ['CARE PLAN', screeningResult.actionRecommendation || (screeningResult.referable ? 'Refer to Ophthalmologist within 2-4 weeks' : 'Routine Rescreening in 12 Months')],
                   ['AI INTERPRETATION', 'Autonomous deep neural interpretation via DRISHYA Retinal Engine v1.0.'],
                 ].map(([label, val], i) => (
                   <div key={i} style={{
@@ -350,7 +350,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     ['Microaneurysms (MA)', screeningResult.biomarkers?.mas || '0 detected'],
                     ['Exudate Area (EX)', screeningResult.biomarkers?.exudates || '0.00% area'],
                     ['Hemorrhage Quadrants', screeningResult.biomarkers?.hemorrhages || '0 quadrants'],
-                    ['Macular Edema Risk', screeningResult.biomarkers?.neovascularization === 'Present (PDR)' ? 'High Risk' : 'Low Risk (Fovea Clear)'],
+                    ['Macular Edema Risk', screeningResult.biomarkers?.macularRisk || (screeningResult.biomarkers?.neovascularization === 'Present (PDR)' ? 'High Risk' : 'Low Risk (Fovea Clear)')],
                   ].map(([label, val], i) => (
                     <div key={i} style={{
                       display: 'grid',
@@ -390,7 +390,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 </div>
                 <div>
                   {[
-                    ['Autonomous Engine', 'DRISHYA PP-LCNet MTL (3.29M params)'],
+                    ['Autonomous Engine', 'DRISHYA EfficientNetV2 MTL (7.67M params)'],
                     ['Clinical Sensitivity', '94.2% (Multi-Center Cohort)'],
                     ['Clinical Specificity', '91.8% (Target: DR & DME)'],
                     ['Gradability Rate', '96.0% (Rural Field Validated)'],

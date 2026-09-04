@@ -122,12 +122,13 @@ def generate_clinical_pdf(
 
     s_banner_text = ParagraphStyle('BannerText', fontName=FONT_BOLD, fontSize=7.5, leading=9.5, textColor=WHITE)
 
-    s_label = ParagraphStyle('Label', fontName=FONT_BOLD, fontSize=6.5, leading=8.5, textColor=SLATE_600)
-    s_value = ParagraphStyle('Value', fontName=FONT_REGULAR, fontSize=7.0, leading=9.0, textColor=DARK_900)
-    s_value_bold = ParagraphStyle('ValueBold', fontName=FONT_BOLD, fontSize=7.0, leading=9.0, textColor=DARK_900)
+    s_label = ParagraphStyle('Label', fontName=FONT_BOLD, fontSize=6.8, leading=8.8, textColor=SLATE_600)
+    s_value = ParagraphStyle('Value', fontName=FONT_REGULAR, fontSize=7.2, leading=9.2, textColor=DARK_900)
+    s_value_bold = ParagraphStyle('ValueBold', fontName=FONT_BOLD, fontSize=7.2, leading=9.2, textColor=DARK_900)
 
-    s_cell = ParagraphStyle('Cell', fontName=FONT_REGULAR, fontSize=6.5, leading=8.5, textColor=SLATE_700)
-    s_cell_bold = ParagraphStyle('CellBold', fontName=FONT_BOLD, fontSize=6.5, leading=8.5, textColor=DARK_900)
+    s_cell = ParagraphStyle('Cell', fontName=FONT_REGULAR, fontSize=6.8, leading=8.8, textColor=SLATE_700)
+    s_cell_bold = ParagraphStyle('CellBold', fontName=FONT_BOLD, fontSize=6.8, leading=8.8, textColor=DARK_900)
+    s_th = ParagraphStyle('TableHead', fontName=FONT_BOLD, fontSize=6.8, leading=8.8, textColor=SLATE_700)
 
     s_cap_title = ParagraphStyle('CapTitle', fontName=FONT_BOLD, fontSize=6.5, leading=8.5, textColor=DARK_900, alignment=1)
     s_cap_sub = ParagraphStyle('CapSub', fontName=FONT_REGULAR, fontSize=5.5, leading=7.5, textColor=SLATE_500, alignment=1)
@@ -166,7 +167,7 @@ def generate_clinical_pdf(
     header_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('PADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
     story.append(header_table)
     story.append(HRFlowable(width="100%", thickness=1.4, color=DARK_900, spaceBefore=0, spaceAfter=4))
@@ -178,10 +179,10 @@ def generate_clinical_pdf(
         t = Table([[Paragraph(f"<b>{title_text}</b>", s_banner_text)]], colWidths=[width])
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), DARK_900),
-            ('LEFTPADDING', (0, 0), (-1, -1), 6),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         return t
@@ -202,15 +203,15 @@ def generate_clinical_pdf(
         _info_cell("AGE / SEX", patient_info.get('age_sex') or 'Adult Screening'),
         _info_cell("RESULT DATE", datetime.now().strftime('%d/%m/%Y %I:%M %p')),
     ]
-    t_patient = Table(left_info_data, colWidths=[col_w_left * 0.35, col_w_left * 0.65])
+    t_patient = Table(left_info_data, colWidths=[col_w_left * 0.35, col_w_left * 0.65], rowHeights=[18.5, 18.5, 18.5, 18.5])
     t_patient.setStyle(TableStyle([
         ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
         ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
         ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
@@ -221,15 +222,15 @@ def generate_clinical_pdf(
         _info_cell("ORDERING CODE", patient_info.get('ordering_code', 'E11.9 (Type 2 Diabetes)')),
         _info_cell("REPORT ID", report_id),
     ]
-    t_general = Table(right_info_data, colWidths=[col_w_right * 0.36, col_w_right * 0.64])
+    t_general = Table(right_info_data, colWidths=[col_w_right * 0.36, col_w_right * 0.64], rowHeights=[18.5, 18.5, 18.5, 18.5])
     t_general.setStyle(TableStyle([
         ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
         ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
         ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
@@ -245,7 +246,7 @@ def generate_clinical_pdf(
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     story.append(patient_grid)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 8))
 
     # ═══════════════════════════════════════════════════════════════════════════
     # 3. PHOTOS OF RETINA IN A ROW (Preprocessed, Lesions, Grad-CAM++)
@@ -262,20 +263,20 @@ def generate_clinical_pdf(
             [img_obj],
             [Paragraph(caption_title, s_cap_title)],
             [Paragraph(caption_sub, s_cap_sub)]
-        ], colWidths=[w + 8])
+        ], colWidths=[w + 20])
         card.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('LEFTPADDING', (0, 0), (-1, -1), 0),
             ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-            ('TOPPADDING', (0, 0), (-1, -1), 2),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
             ('BOX', (0, 0), (-1, 0), 0.5, SLATE_300),
         ]))
         return card
 
     card_prep = _frame_image(panel_paths.get('preprocessed', ''), "<b>(a) Preprocessed Retina</b>", "1:1 crop • CLAHE normalized", img_dim, img_dim)
-    card_lesions = _frame_image(panel_paths.get('lesions', ''), "<b>(b) Detected Lesions</b>", "MA (Red) • EX (Yel) • HE (Crimson)", img_dim, img_dim)
+    card_lesions = _frame_image(panel_paths.get('lesions', ''), "<b>(b) Detected Lesions</b>", "MA (Red) • EX (Yel) • HE (Crimson) • SE (Cyan)", img_dim, img_dim)
     card_gradcam = _frame_image(panel_paths.get('gradcam', ''), "<b>(c) Grad-CAM++ Attention</b>", "Neural saliency focus areas", img_dim, img_dim)
 
     photos_table = Table([[card_prep, card_lesions, card_gradcam]], colWidths=[W / 3.0, W / 3.0, W / 3.0])
@@ -300,12 +301,12 @@ def generate_clinical_pdf(
         ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
     ]))
     story.append(photos_section)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 8))
 
     # ═══════════════════════════════════════════════════════════════════════════
     # 4. RESULTS & CLINICAL TRIAGE SECTION (BELOW PHOTOS)
     # ═══════════════════════════════════════════════════════════════════════════
-    is_referable = diagnostic_result.get('grade_num', 0) >= 2
+    is_referable = bool(diagnostic_result.get('is_referable', diagnostic_result.get('grade_num', 0) >= 2))
     verdict_text = "REFERRAL RECOMMENDED" if is_referable else "NO REFERRAL NEEDED"
     verdict_color = RED_DARK if is_referable else GREEN_DARK
     verdict_bg = RED_BG if is_referable else GREEN_BG
@@ -318,10 +319,10 @@ def generate_clinical_pdf(
     diag_banner.setStyle(TableStyle([
         ('SPAN', (0, 0), (1, 0)),
         ('BACKGROUND', (0, 0), (-1, -1), DARK_900),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 3.5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
@@ -331,23 +332,23 @@ def generate_clinical_pdf(
         _info_cell("CARE PLAN", diagnostic_result.get('action_followup', 'Routine Rescreening in 12 Months')),
         _info_cell("AI INTERPRETATION", "Autonomous deep neural interpretation via DRISHYA Retinal Engine v1.0."),
     ]
-    t_diag_left = Table(diag_left_data, colWidths=[res_w_left * 0.32, res_w_left * 0.68], rowHeights=[17, 17, 17, 17])
+    t_diag_left = Table(diag_left_data, colWidths=[res_w_left * 0.32, res_w_left * 0.68], rowHeights=[21, 21, 21, 21])
     t_diag_left.setStyle(TableStyle([
         ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
         ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
         ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 7),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+        ('TOPPADDING', (0, 0), (-1, -1), 4.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4.5),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
     # Clinical Verdict Card
-    s_verdict_sub = ParagraphStyle('VerdictSub', fontName=FONT_BOLD, fontSize=6.5, leading=8.5, textColor=SLATE_600, alignment=1)
-    s_verdict_main = ParagraphStyle('VerdictMain', fontName=FONT_BOLD, fontSize=14, leading=17, textColor=verdict_color, alignment=1)
-    s_verdict_action = ParagraphStyle('VerdictAction', fontName=FONT_BOLD, fontSize=6.8, leading=8.8, textColor=verdict_color, alignment=1)
-    s_verdict_meta = ParagraphStyle('VerdictMeta', fontName=FONT_REGULAR, fontSize=6.0, leading=8.0, textColor=SLATE_600, alignment=1)
+    s_verdict_sub = ParagraphStyle('VerdictSub', fontName=FONT_BOLD, fontSize=6.8, leading=8.8, textColor=SLATE_600, alignment=1)
+    s_verdict_main = ParagraphStyle('VerdictMain', fontName=FONT_BOLD, fontSize=14.5, leading=17.5, textColor=verdict_color, alignment=1)
+    s_verdict_action = ParagraphStyle('VerdictAction', fontName=FONT_BOLD, fontSize=7.0, leading=9.0, textColor=verdict_color, alignment=1)
+    s_verdict_meta = ParagraphStyle('VerdictMeta', fontName=FONT_REGULAR, fontSize=6.2, leading=8.2, textColor=SLATE_600, alignment=1)
 
     triage_sub = diagnostic_result.get('triage_sub', 'Specialist Slit-Lamp Exam Recommended' if is_referable else 'Routine Primary Care Screening')
     conf_str = diagnostic_result.get('confidence', '96.4%')
@@ -360,16 +361,16 @@ def generate_clinical_pdf(
         [Paragraph(f"<b>Protocol:</b> {triage_sub}", s_verdict_action)],
         [Paragraph(f"<b>ICDR Grade {grade_num}</b> &nbsp;|&nbsp; Confidence: {conf_str} &nbsp;|&nbsp; IQA: {iqa_str}", s_verdict_meta)]
     ]
-    t_verdict = Table(verdict_card_data, colWidths=[res_w_right], rowHeights=[13, 23, 16, 16])
+    t_verdict = Table(verdict_card_data, colWidths=[res_w_right], rowHeights=[15, 29, 20, 20])
     t_verdict.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), verdict_bg),
         ('BOX', (0, 0), (-1, -1), 0.7, verdict_border),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
     ]))
 
     results_grid = Table([
@@ -385,61 +386,93 @@ def generate_clinical_pdf(
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     story.append(results_grid)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 8))
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # 5. AI SPECIFICATIONS & QUANTITATIVE BIOMARKERS (2-COLUMN BALANCED TABLE)
+    # 5. QUANTITATIVE RETINAL BIOMARKERS (FULL WIDTH, CLEAN 3-COLUMN TABLE)
     # ═══════════════════════════════════════════════════════════════════════════
-    half_w = W * 0.5
-    bio_data = [
-        _info_cell("Microaneurysms (MA)", biomarker_metrics.get('mas', '0 detected')),
-        _info_cell("Exudate Area (EX)", biomarker_metrics.get('exudates', '0.00% area')),
-        _info_cell("Hemorrhage Quadrants", biomarker_metrics.get('hemorrhages', '0 quadrants')),
-        _info_cell("Macular Edema Risk", biomarker_metrics.get('macula', 'Low Risk')),
+    mas_val = biomarker_metrics.get('mas', '0 detected')
+    mas_rel = biomarker_metrics.get('mas_rel', 'Normal vascular integrity')
+
+    ex_val = biomarker_metrics.get('exudates', '0.00% area')
+    ex_rel = biomarker_metrics.get('exudates_rel', 'Absent')
+
+    se_val = biomarker_metrics.get('soft_exudates', '0.00% area')
+    se_rel = biomarker_metrics.get('soft_exudates_rel', 'Absent')
+
+    he_val = biomarker_metrics.get('hemorrhages', '0 quadrants')
+    he_rel = biomarker_metrics.get('hemorrhages_rel', 'No significant hemorrhage detected')
+
+    mac_val = biomarker_metrics.get('macula', 'Low Risk')
+    mac_rel = biomarker_metrics.get('macula_rel', 'No lesions in macular zone')
+
+    nv_val = biomarker_metrics.get('neovascularization', '0 (Absent)')
+    nv_rel = 'Proliferative DR Hallmarks (New vessels on disc/elsewhere absent)' if 'Absent' in nv_val else 'Suspected PDR (Urgent specialist evaluation required)'
+
+    bio_table_data = [
+        [
+            Paragraph("<b>RETINAL BIOMARKER / LESION TYPE</b>", s_th),
+            Paragraph("<b>QUANTITATIVE MEASUREMENT</b>", s_th),
+            Paragraph("<b>CLINICAL INTERPRETATION &amp; STATUS</b>", s_th)
+        ],
+        [
+            Paragraph("<b>Microaneurysms (MA)</b>", s_label),
+            Paragraph(mas_val, s_value_bold),
+            Paragraph(mas_rel, s_value)
+        ],
+        [
+            Paragraph("<b>Hard Exudates (EX)</b>", s_label),
+            Paragraph(ex_val, s_value_bold),
+            Paragraph(ex_rel, s_value)
+        ],
+        [
+            Paragraph("<b>Soft Exudates / Cotton-Wool Spots (SE)</b>", s_label),
+            Paragraph(se_val, s_value_bold),
+            Paragraph(se_rel, s_value)
+        ],
+        [
+            Paragraph("<b>Intraretinal Hemorrhages (HE)</b>", s_label),
+            Paragraph(he_val, s_value_bold),
+            Paragraph(he_rel, s_value)
+        ],
+        [
+            Paragraph("<b>Macular Edema Risk Assessment</b>", s_label),
+            Paragraph(mac_val, s_value_bold),
+            Paragraph(mac_rel, s_value)
+        ],
+        [
+            Paragraph("<b>Neovascularization (NV)</b>", s_label),
+            Paragraph(nv_val, s_value_bold),
+            Paragraph(nv_rel, s_value)
+        ],
     ]
-    t_bio = Table(bio_data, colWidths=[half_w * 0.42, half_w * 0.58], rowHeights=[14.5, 14.5, 14.5, 14.5])
+
+    t_bio = Table(bio_table_data, colWidths=[W * 0.32, W * 0.24, W * 0.44], rowHeights=[19, 21.5, 21.5, 21.5, 21.5, 21.5, 21.5])
     t_bio.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), SLATE_100),
         ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
         ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
-        ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [WHITE, SLATE_50]),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
-    bench_data = [
-        _info_cell("Autonomous Engine", "DRISHYA PP-LCNet MTL (3.29M params)"),
-        _info_cell("Clinical Sensitivity", biomarker_metrics.get('sensitivity', '94.2%')),
-        _info_cell("Clinical Specificity", biomarker_metrics.get('specificity', '91.8%')),
-        _info_cell("Gradability Rate", biomarker_metrics.get('diagnosability', '96.0%')),
-    ]
-    t_bench = Table(bench_data, colWidths=[half_w * 0.38, half_w * 0.62], rowHeights=[14.5, 14.5, 14.5, 14.5])
-    t_bench.setStyle(TableStyle([
-        ('INNERGRID', (0, 0), (-1, -1), 0.4, SLATE_200),
-        ('BOX', (0, 0), (-1, -1), 0.5, SLATE_300),
-        ('BACKGROUND', (0, 0), (0, -1), SLATE_50),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-    ]))
-
-    bio_bench_grid = Table([
-        [_make_banner("QUANTITATIVE RETINAL BIOMARKERS", half_w), _make_banner("AI ENGINE SPECIFICATIONS & BENCHMARKS", half_w)],
-        [t_bio, t_bench]
-    ], colWidths=[half_w, half_w])
-    bio_bench_grid.setStyle(TableStyle([
+    bio_section = Table([
+        [_make_banner("QUANTITATIVE RETINAL BIOMARKERS", W)],
+        [t_bio]
+    ], colWidths=[W])
+    bio_section.setStyle(TableStyle([
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
         ('RIGHTPADDING', (0, 0), (-1, -1), 0),
         ('TOPPADDING', (0, 0), (-1, -1), 0),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
-    story.append(bio_bench_grid)
-    story.append(Spacer(1, 4))
+    story.append(bio_section)
+    story.append(Spacer(1, 10))
 
     # ═══════════════════════════════════════════════════════════════════════════
     # 5. DISCLAIMER & AUDIT TRAIL
@@ -476,7 +509,8 @@ if __name__ == "__main__":
         'iqa_status': 'Pass (Q=0.88)',
         'confidence': '96.4%',
         'grade_num': 2,
-        'action_followup': 'Retest in 6 months',
+        'is_referable': True,
+        'action_followup': 'Specialist evaluation within 4-6 weeks',
     }
     panel_paths = {
         'preprocessed': 'backend/outputs/20260903_125328_prep.png',
@@ -488,6 +522,8 @@ if __name__ == "__main__":
         'mas_rel': 'Active microvascular leakage',
         'exudates': '1.10% area cluster',
         'exudates_rel': 'Lipoprotein deposits near arcade',
+        'soft_exudates': '0.18% area',
+        'soft_exudates_rel': 'Focal cotton wool spots (nerve fiber ischemia)',
         'hemorrhages': '2 quadrants',
         'hemorrhages_rel': 'Below severe NPDR threshold',
         'neovascularization': '0 (Absent)',

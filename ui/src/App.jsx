@@ -108,7 +108,7 @@ export default function App() {
             grade: data.grade,
             gradeTitle: data.grade_title,
             gradeDesc: data.grade_desc,
-            actionRecommendation: data.action,
+            actionRecommendation: data.action || (data.referable_dr ? 'Refer to Ophthalmologist within 2-4 weeks' : 'Routine Rescreening in 12 Months'),
             confidence: data.confidence,
             referable: data.referable_dr ?? false,
             rawImg: data.files?.raw_path ? `/outputs/${data.files.raw_path.split('/').pop()}` : uploadedImage.previewUrl,
@@ -122,7 +122,9 @@ export default function App() {
               exudates: `${data.biomarkers?.exudate_area_pct ?? '0.00%'} area`,
               exudatesStatus: parseFloat(data.biomarkers?.exudate_area_pct || '0') > 1 ? 'Significant' : 'Low / Absent',
               hemorrhages: data.biomarkers?.hemorrhage_quadrants ? `${data.biomarkers.hemorrhage_quadrants} Quadrants` : 'None detected',
-              neovascularization: data.grade === 4 ? 'Present (PDR)' : '0 (Absent)'
+              neovascularization: data.grade === 4 ? 'Present (PDR)' : '0 (Absent)',
+              macularRisk: data.biomarkers?.macular_risk || 'Low Risk',
+              macularDetail: data.biomarkers?.macular_detail || 'No lesions in macular zone'
             },
             pdfDownloadUrl: data.pdf_download_url
           });

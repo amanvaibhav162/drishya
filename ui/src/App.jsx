@@ -3,8 +3,12 @@ import Sidebar from './components/Sidebar';
 import HealthWorkerMode from './components/HealthWorkerMode';
 import JudgeInspectorMode from './components/JudgeInspectorMode';
 import PdfPreviewModal from './components/PdfPreviewModal';
+import LanguageSelector from './components/LanguageSelector';
+import { LanguageProvider } from './context/LanguageContext';
+import { useLanguage } from './context/useLanguage';
 
-export default function App() {
+function AppContent() {
+  const { t } = useLanguage();
   const [activeMode, setActiveMode] = useState('health-worker'); // 'health-worker' or 'judge-inspector'
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -42,7 +46,7 @@ export default function App() {
   // Live step-by-step pipeline execution
   const handleRunScreening = async () => {
     if (!uploadedImage?.file) {
-      alert('Please upload or select a retinal fundus scan first.');
+      alert(t('alert_upload_first', 'Please upload or select a retinal fundus scan first.'));
       return;
     }
 
@@ -162,11 +166,12 @@ export default function App() {
         <header className="top-bar">
           <div className="top-bar-left">
             <span className="top-title">
-              {activeMode === 'health-worker' ? 'Health Worker Portal' : 'Judge Pipeline & Explainability Inspector'}
+              {activeMode === 'health-worker' ? t('top_title_hw') : t('top_title_judge')}
             </span>
           </div>
-
-
+          <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <LanguageSelector />
+          </div>
         </header>
 
         {/* Workspace Body */}
@@ -205,5 +210,13 @@ export default function App() {
         patientInfo={patientInfo}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }

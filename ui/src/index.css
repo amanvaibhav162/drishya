@@ -48,8 +48,8 @@
   --leading-normal: 1.6;
   --leading-relaxed: 1.6;
 
-  --font-main: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-main: "Inter", "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Noto Sans Devanagari", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
@@ -740,4 +740,67 @@ body {
   .step-divider {
     display: none;
   }
+}
+
+/* ── Language Selector Pill ────────────────────────────────────────────────── */
+.language-selector {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--bg-surface-elevated, #F8FAFC);
+  border: 1px solid var(--border-subtle, #CBD5E1);
+  border-radius: 9999px;
+  padding: 3px 6px;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+}
+
+.language-selector:hover {
+  border-color: var(--border-strong, #94A3B8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.lang-icon {
+  color: #64748B;
+  margin-left: 5px;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  line-height: 1.2;
+  font-family: inherit;
+  outline: none;
+}
+
+.lang-btn:hover:not(.active) {
+  color: #0F172A;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.lang-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--brand-primary, #0284C7);
+}
+
+.lang-btn.active {
+  background-color: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.lang-divider {
+  width: 1px;
+  height: 14px;
+  background-color: #CBD5E1;
+  display: inline-block;
+  margin: 0 1px;
 }

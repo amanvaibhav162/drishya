@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sliders, FileText, Download, Play, RefreshCw, Upload } from 'lucide-react';
+import { useLanguage } from '../context/useLanguage';
 
 export default function JudgeInspectorMode({
   screeningResult,
@@ -9,16 +10,17 @@ export default function JudgeInspectorMode({
   isProcessing,
   onOpenPdfModal
 }) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('gradcam'); // 'raw', 'preprocessed', 'lesions', 'gradcam'
   const [heatmapOpacity, setHeatmapOpacity] = useState(40); // 0 to 100
 
   const steps = [
-    { id: 1, label: '1. Ingestion' },
-    { id: 2, label: '2. Edge IQA' },
-    { id: 3, label: '3. Normalization' },
-    { id: 4, label: '4. AI Inference' },
-    { id: 5, label: '5. Grad-CAM++' },
-    { id: 6, label: '6. Report Ready' }
+    { id: 1, label: t('step_ingestion') },
+    { id: 2, label: t('step_iqa') },
+    { id: 3, label: t('step_normalization') },
+    { id: 4, label: t('step_inference') },
+    { id: 5, label: t('step_gradcam') },
+    { id: 6, label: t('step_report') }
   ];
 
   // Active images from real screening or loaded scan
@@ -42,14 +44,19 @@ export default function JudgeInspectorMode({
   };
 
   const isReferable = screeningResult?.referable ?? false;
-  const gradeTitle = screeningResult?.gradeTitle;
-  const gradeDesc = screeningResult?.gradeDesc;
+  const gradeTitle = screeningResult?.grade !== undefined && screeningResult?.grade >= 0 && screeningResult?.grade <= 4
+    ? t(`grade_${screeningResult.grade}_title`, screeningResult?.gradeTitle)
+    : (screeningResult?.gradeTitle || '');
+
+  const gradeDesc = screeningResult?.grade !== undefined && screeningResult?.grade >= 0 && screeningResult?.grade <= 4
+    ? t(`grade_${screeningResult.grade}_desc`, screeningResult?.gradeDesc)
+    : (screeningResult?.gradeDesc || '');
+
   const confidence = screeningResult?.confidence;
   const iqaScore = screeningResult?.iqaScore;
   const biomarkers = screeningResult?.biomarkers;
 
   return (
-
     <div>
       {/* Pipeline Progress Stepper */}
       <div className="stepper-container">
@@ -74,7 +81,7 @@ export default function JudgeInspectorMode({
           onClick={onRunStepSimulation}
           disabled={isProcessing || !uploadedImage}
         >
-          {isProcessing ? <RefreshCw size={12} className="spin-icon" /> : <Play size={12} />} Run AI Pipeline
+          {isProcessing ? <RefreshCw size={12} className="spin-icon" /> : <Play size={12} />} {t('run_simulation')}
         </button>
       </div>
 
@@ -109,8 +116,8 @@ export default function JudgeInspectorMode({
         {/* Left Column: Retinal Visual Workspace */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h3 className="text-h3">Retinal Stage Visualization</h3>
-            <span className="badge badge-neutral">Resolution: 384x384 Tensor</span>
+            <h3 className="text-h3">{t('multitask_maps_sec')}</h3>
+            <span className="badge badge-neutral">Resolution: 384×384 Tensor</span>
           </div>
 
           {/* Stage Tabs */}
@@ -120,28 +127,28 @@ export default function JudgeInspectorMode({
               className={`tab-btn ${activeTab === 'raw' ? 'active' : ''}`}
               onClick={() => setActiveTab('raw')}
             >
-              (a) Raw Scan
+              (a) {t('view_raw')}
             </button>
             <button
               id="tab-preprocessed"
               className={`tab-btn ${activeTab === 'preprocessed' ? 'active' : ''}`}
               onClick={() => setActiveTab('preprocessed')}
             >
-              (b) Preprocessed
+              (b) {t('view_preprocessed')}
             </button>
             <button
               id="tab-lesions"
               className={`tab-btn ${activeTab === 'lesions' ? 'active' : ''}`}
               onClick={() => setActiveTab('lesions')}
             >
-              (c) Lesion Overlay
+              (c) {t('view_lesions')}
             </button>
             <button
               id="tab-gradcam"
               className={`tab-btn ${activeTab === 'gradcam' ? 'active' : ''}`}
               onClick={() => setActiveTab('gradcam')}
             >
-              (d) Grad-CAM++
+              (d) {t('view_gradcam')}
             </button>
           </div>
 
@@ -179,7 +186,7 @@ export default function JudgeInspectorMode({
             <div className="slider-control">
               <span style={{ fontWeight: 600, minWidth: '130px' }}>
                 <Sliders size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                Heatmap Opacity: {heatmapOpacity}%
+                {t('heatmap_opacity')}: {heatmapOpacity}%
               </span>
               <input
                 id="slider-heatmap-opacity"
@@ -203,7 +210,7 @@ export default function JudgeInspectorMode({
         {/* Right Column: Clinical Metrics & Causal Biomarkers */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="text-h3" style={{ marginBottom: '12px' }}>
-            Diagnostic Findings & Biomarker Evidence
+            {t('triage_verdict')}
           </h3>
 
           {screeningResult ? (
@@ -218,7 +225,7 @@ export default function JudgeInspectorMode({
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <span className="badge badge-neutral" style={{ marginBottom: '4px' }}>ICDR Severity Classification</span>
+                    <span className="badge badge-neutral" style={{ marginBottom: '4px' }}>{t('icdr_grading')}</span>
                     <div className="text-h1" style={{ color: 'var(--text-primary)' }}>
                       {gradeTitle}
                     </div>
@@ -228,7 +235,7 @@ export default function JudgeInspectorMode({
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div className="text-micro" style={{ color: 'var(--text-muted)', fontWeight: 700 }}>AI CONFIDENCE</div>
+                    <div className="text-micro" style={{ color: 'var(--text-muted)', fontWeight: 700 }}>{t('confidence')}</div>
                     <div className="text-h1" style={{ color: 'var(--text-primary)' }}>
                       {confidence}
                     </div>
@@ -237,7 +244,7 @@ export default function JudgeInspectorMode({
 
                 <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span className="text-caption" style={{ fontWeight: 700, color: isReferable ? '#B45309' : '#15803D' }}>
-                    {isReferable ? '⚠️ REFERABLE DR (Specialist Referral Required)' : '🟢 NON-REFERABLE (Routine Screening)'}
+                    {isReferable ? `⚠️ ${t('referral_badge')}` : `🟢 ${t('routine_badge')}`}
                   </span>
                   <span className="badge badge-pass">IQA: PASS (Q={iqaScore})</span>
                 </div>
@@ -247,7 +254,7 @@ export default function JudgeInspectorMode({
               {biomarkers && (
                 <div style={{ marginBottom: '16px' }}>
                   <div className="text-caption" style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                    Clinical Biomarker Quantification (Causal Evidence)
+                    {t('biomarker_metrics')}
                   </div>
                   <table className="data-table">
                     <thead>
@@ -259,22 +266,22 @@ export default function JudgeInspectorMode({
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ fontWeight: 600 }}>Microaneurysms (MAs)</td>
+                        <td style={{ fontWeight: 600 }}>{t('biomarker_mas')}</td>
                         <td><b>{biomarkers.mas}</b></td>
                         <td><span className="badge badge-warn">{biomarkers.masStatus}</span></td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 600 }}>Hard Exudates (Lipids)</td>
+                        <td style={{ fontWeight: 600 }}>{t('biomarker_exudates')}</td>
                         <td><b>{biomarkers.exudates}</b></td>
                         <td><span className="badge badge-warn">{biomarkers.exudatesStatus}</span></td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 600 }}>Hemorrhage Spread</td>
+                        <td style={{ fontWeight: 600 }}>{t('biomarker_hemorrhages')}</td>
                         <td><b>{biomarkers.hemorrhages}</b></td>
                         <td><span className="badge badge-neutral">Below 4:2:1 Rule</span></td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 600 }}>Neovascularization</td>
+                        <td style={{ fontWeight: 600 }}>{t('biomarker_nv')}</td>
                         <td><b>{biomarkers.neovascularization}</b></td>
                         <td><span className="badge badge-pass">Non-Proliferative</span></td>
                       </tr>
@@ -307,7 +314,7 @@ export default function JudgeInspectorMode({
                   onClick={onRunStepSimulation}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? <RefreshCw size={14} className="spin-icon" /> : <Play size={14} />} Run AI Pipeline
+                  {isProcessing ? <RefreshCw size={14} className="spin-icon" /> : <Play size={14} />} {t('run_simulation')}
                 </button>
               )}
             </div>
@@ -321,7 +328,7 @@ export default function JudgeInspectorMode({
               onClick={onOpenPdfModal}
               disabled={!screeningResult}
             >
-              <FileText size={16} /> Preview 1-Page PDF
+              <FileText size={16} /> {t('view_report_btn')}
             </button>
 
             <button
@@ -330,7 +337,7 @@ export default function JudgeInspectorMode({
               onClick={onOpenPdfModal}
               disabled={!screeningResult}
             >
-              <Download size={16} /> Download Official PDF
+              <Download size={16} /> {t('download_pdf_btn')}
             </button>
           </div>
         </div>

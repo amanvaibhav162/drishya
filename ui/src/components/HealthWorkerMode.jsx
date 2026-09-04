@@ -1,45 +1,6 @@
-
 import React, { useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone, Calendar, Upload, Image as ImageIcon } from 'lucide-react';
-
-const PIPELINE_STAGES = [
-  {
-    step: 1,
-    title: 'Image Ingestion & Edge IQA',
-    subtext: 'Verifying optical focus, retinal illumination, and field-of-view...',
-    pct: 18,
-  },
-  {
-    step: 2,
-    title: 'Normalization & Preprocessing',
-    subtext: 'Applying CLAHE adaptive histogram and green-channel contrast enhancement...',
-    pct: 38,
-  },
-  {
-    step: 3,
-    title: 'EfficientNetV2 Deep Multi-Task Inference',
-    subtext: 'Evaluating ICDR severity grading & referable DR probability...',
-    pct: 65,
-  },
-  {
-    step: 4,
-    title: 'Lesion Saliency & Attention Map',
-    subtext: 'Generating Grad-CAM++ neural activation map & localizing microaneurysms...',
-    pct: 85,
-  },
-  {
-    step: 5,
-    title: 'Compiling Certified Clinical Report',
-    subtext: 'Synthesizing biomarker findings and generating audit-ready PDF...',
-    pct: 95,
-  },
-  {
-    step: 6,
-    title: 'Diagnostic Analysis Complete',
-    subtext: 'Finalizing clinical findings and triage delivery...',
-    pct: 100,
-  },
-];
+import { AlertCircle, CheckCircle2, FileText, Download, Send, RefreshCw, User, Phone, Calendar, Upload } from 'lucide-react';
+import { useLanguage } from '../context/useLanguage';
 
 export default function HealthWorkerMode({
   patientInfo,
@@ -53,8 +14,48 @@ export default function HealthWorkerMode({
   currentStep = 1,
   onOpenPdfModal
 }) {
+  const { t } = useLanguage();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const pipelineStages = [
+    {
+      step: 1,
+      title: t('stage_1_title'),
+      subtext: t('stage_1_sub'),
+      pct: 18,
+    },
+    {
+      step: 2,
+      title: t('stage_2_title'),
+      subtext: t('stage_2_sub'),
+      pct: 38,
+    },
+    {
+      step: 3,
+      title: t('stage_3_title'),
+      subtext: t('stage_3_sub'),
+      pct: 65,
+    },
+    {
+      step: 4,
+      title: t('stage_4_title'),
+      subtext: t('stage_4_sub'),
+      pct: 85,
+    },
+    {
+      step: 5,
+      title: t('stage_5_title'),
+      subtext: t('stage_5_sub'),
+      pct: 95,
+    },
+    {
+      step: 6,
+      title: t('stage_6_title'),
+      subtext: t('stage_6_sub'),
+      pct: 100,
+    },
+  ];
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -85,20 +86,29 @@ export default function HealthWorkerMode({
   };
 
   const isUngradable = screeningResult && !screeningResult.iqaPass;
-  const activeStage = PIPELINE_STAGES[Math.min(Math.max((currentStep || 1) - 1, 0), PIPELINE_STAGES.length - 1)];
+  const activeStage = pipelineStages[Math.min(Math.max((currentStep || 1) - 1, 0), pipelineStages.length - 1)];
+
+  // Localized grade title & recommendation
+  const localizedGradeTitle = screeningResult?.grade !== undefined && screeningResult?.grade >= 0 && screeningResult?.grade <= 4
+    ? t(`grade_${screeningResult.grade}_title`, screeningResult.gradeTitle)
+    : (screeningResult?.gradeTitle || '');
+
+  const localizedAction = screeningResult?.referable
+    ? t('action_referral', screeningResult?.actionRecommendation)
+    : t('action_routine', screeningResult?.actionRecommendation);
 
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto' }}>
       {/* Patient Header Card */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <h2 className="text-h2" style={{ marginBottom: '12px' }}>
-          1. Patient Registration & Tagging
+          {t('step1_title')}
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', marginBottom: '12px' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <User size={12} style={{ display: 'inline', marginRight: '4px' }} />
-              Patient Full Name
+              {t('patient_name')}
             </label>
             <input
               id="input-patient-name"
@@ -106,14 +116,14 @@ export default function HealthWorkerMode({
               className="form-input"
               value={patientInfo.name}
               onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })}
-              placeholder="e.g. Ramesh Kumar"
+              placeholder={t('patient_name_placeholder')}
             />
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <Phone size={12} style={{ display: 'inline', marginRight: '4px' }} />
-              Mobile Number
+              {t('mobile_num')}
             </label>
             <input
               id="input-patient-phone"
@@ -121,7 +131,7 @@ export default function HealthWorkerMode({
               className="form-input"
               value={patientInfo.phone}
               onChange={(e) => setPatientInfo({ ...patientInfo, phone: e.target.value })}
-              placeholder="+91 98765 43210"
+              placeholder={t('mobile_placeholder')}
             />
           </div>
         </div>
@@ -130,7 +140,7 @@ export default function HealthWorkerMode({
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <Calendar size={12} style={{ display: 'inline', marginRight: '4px' }} />
-              Age (Years)
+              {t('age')}
             </label>
             <input
               id="input-patient-age"
@@ -140,14 +150,14 @@ export default function HealthWorkerMode({
               className="form-input"
               value={patientInfo.age}
               onChange={(e) => setPatientInfo({ ...patientInfo, age: e.target.value })}
-              placeholder="e.g. 54"
+              placeholder={t('age_placeholder')}
             />
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <User size={12} style={{ display: 'inline', marginRight: '4px' }} />
-              Gender
+              {t('gender')}
             </label>
             <select
               id="input-patient-gender"
@@ -156,16 +166,16 @@ export default function HealthWorkerMode({
               onChange={(e) => setPatientInfo({ ...patientInfo, gender: e.target.value })}
               style={{ cursor: 'pointer' }}
             >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="Male">{t('gender_male')}</option>
+              <option value="Female">{t('gender_female')}</option>
+              <option value="Other">{t('gender_other')}</option>
             </select>
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <FileText size={12} style={{ display: 'inline', marginRight: '4px' }} />
-              ABHA ID
+              {t('abha_id')}
             </label>
             <input
               id="input-patient-abha"
@@ -173,7 +183,7 @@ export default function HealthWorkerMode({
               className="form-input"
               value={patientInfo.abhaId}
               onChange={(e) => setPatientInfo({ ...patientInfo, abhaId: e.target.value })}
-              placeholder="91-4820-1940-52"
+              placeholder={t('abha_placeholder')}
             />
           </div>
         </div>
@@ -182,8 +192,8 @@ export default function HealthWorkerMode({
       {/* Retinal Capture Card */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h2 className="text-h2">2. Retinal Image Ingestion</h2>
-          <span className="badge badge-neutral">Eye: Left Eye (OS)</span>
+          <h2 className="text-h2">{t('step2_title')}</h2>
+          <span className="badge badge-neutral">{t('eye_examined')}: OS</span>
         </div>
 
         {/* Upload Dropzone when no image is loaded */}
@@ -216,10 +226,10 @@ export default function HealthWorkerMode({
                 <Upload size={24} color="var(--brand-primary)" />
               </div>
               <div className="text-body" style={{ fontWeight: 700 }}>
-                Click to upload or drag & drop fundus scan
+                {t('dropzone_title')}
               </div>
               <div className="text-micro" style={{ color: 'var(--text-muted)' }}>
-                Supports PNG, JPG, or DICOM exports (Standard 45° FOV)
+                {t('dropzone_subtitle')}
               </div>
             </div>
           </div>
@@ -254,7 +264,7 @@ export default function HealthWorkerMode({
                 onClick={onClearImage}
                 disabled={isProcessing}
               >
-                <RefreshCw size={11} /> Change Scan
+                <RefreshCw size={11} /> {t('change_photo')}
               </button>
             </div>
 
@@ -274,17 +284,17 @@ export default function HealthWorkerMode({
                   <AlertCircle color="#DC2626" size={24} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
                     <div className="text-body" style={{ color: '#991B1B', fontWeight: 800 }}>
-                      🛑 RETAKE SCAN REQUIRED (Quality Failed)
+                      {t('iqa_failed_title')}
                     </div>
                     <div className="text-caption" style={{ color: '#B91C1C', marginTop: '2px' }}>
-                      The captured scan is blurry or underexposed (Q = {screeningResult.qScore || screeningResult.iqaScore}). Please steady camera and recapture before the patient leaves.
+                      {t('iqa_retake_action')} (Q = {screeningResult.qScore || screeningResult.iqaScore})
                     </div>
                     <button
                       className="btn btn-danger text-caption"
                       style={{ marginTop: '10px', padding: '6px 12px' }}
                       onClick={onClearImage}
                     >
-                      <RefreshCw size={14} /> Recapture Eye Photo
+                      <RefreshCw size={14} /> {t('retake_btn')}
                     </button>
                   </div>
                 </div>
@@ -302,10 +312,10 @@ export default function HealthWorkerMode({
                   <CheckCircle2 color="#16A34A" size={20} />
                   <div>
                     <div className="text-caption" style={{ color: '#166534', fontWeight: 700 }}>
-                      IMAGE QUALITY APPROVED (Q = {screeningResult.iqaScore})
+                      {t('iqa_passed_title')} (Q = {screeningResult.iqaScore})
                     </div>
                     <div className="text-micro" style={{ color: '#15803D' }}>
-                      Focus and illumination verified. Ready for diagnostic grading.
+                      {t('iqa_passed_sub')}
                     </div>
                   </div>
                 </div>
@@ -321,7 +331,7 @@ export default function HealthWorkerMode({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <RefreshCw size={15} className="spin-icon" style={{ color: 'var(--brand-primary)' }} />
                       <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
-                        AI Screening Pipeline Active
+                        {t('analyzing_btn')}
                       </span>
                     </div>
                     <div style={{
@@ -389,7 +399,7 @@ export default function HealthWorkerMode({
                   style={{ width: '100%' }}
                   onClick={onRunScreening}
                 >
-                  Process Scan & Grade Retinopathy
+                  {t('run_screening_btn')}
                 </button>
               )
             )}
@@ -401,7 +411,7 @@ export default function HealthWorkerMode({
       {screeningResult && !isUngradable && (
         <div className="card" style={{ marginBottom: '16px' }}>
           <h2 className="text-h2" style={{ marginBottom: '12px' }}>
-            3. Diagnostic Finding & Clinical Action
+            {t('triage_title')}
           </h2>
 
           <div style={{
@@ -412,13 +422,13 @@ export default function HealthWorkerMode({
             marginBottom: '16px'
           }}>
             <div className="text-micro" style={{ fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              ICDR Severity Grading
+              {t('icdr_grading')}
             </div>
             <div className="text-h1" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
-              {screeningResult.gradeTitle}
+              {localizedGradeTitle}
             </div>
             <div className="text-caption" style={{ fontWeight: 700, color: screeningResult.referable ? '#B45309' : '#15803D', marginTop: '4px' }}>
-              {screeningResult.actionRecommendation}
+              {localizedAction}
             </div>
           </div>
 
@@ -429,7 +439,7 @@ export default function HealthWorkerMode({
               className="btn btn-outline"
               onClick={onOpenPdfModal}
             >
-              <FileText size={16} /> Preview Report
+              <FileText size={16} /> {t('view_report_btn')}
             </button>
 
             <button
@@ -437,7 +447,7 @@ export default function HealthWorkerMode({
               className="btn btn-primary"
               onClick={onOpenPdfModal}
             >
-              <Download size={16} /> Download 1-Page PDF
+              <Download size={16} /> {t('download_pdf_btn')}
             </button>
           </div>
 
@@ -446,7 +456,7 @@ export default function HealthWorkerMode({
             style={{ width: '100%', marginTop: '10px' }}
             onClick={() => alert(`Forwarding report to Tele-Ophthalmology Hub for ${patientInfo.name}...`)}
           >
-            <Send size={14} /> Send to District Specialist
+            <Send size={14} /> {t('telemed_hub')}
           </button>
         </div>
       )}

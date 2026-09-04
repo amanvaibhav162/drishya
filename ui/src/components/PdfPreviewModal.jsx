@@ -1,12 +1,23 @@
 import React from 'react';
 import { X, Download, Printer } from 'lucide-react';
+import { useLanguage } from '../context/useLanguage';
 
 export default function PdfPreviewModal({ isOpen, onClose, screeningResult, patientInfo }) {
+  const { t } = useLanguage();
+
   if (!isOpen || !screeningResult) return null;
 
   const isReferable = screeningResult.referable;
   const resultColor = isReferable ? '#B91C1C' : '#15803D';
-  const resultText = isReferable ? 'Referral Needed' : 'No Referral Needed';
+  const resultText = isReferable ? t('referral_needed') : t('no_referral');
+
+  const localizedDiagnosis = screeningResult.grade !== undefined && screeningResult.grade >= 0 && screeningResult.grade <= 4
+    ? t(`grade_${screeningResult.grade}_desc`, screeningResult.gradeDesc)
+    : (screeningResult.gradeDesc || '');
+
+  const localizedCarePlan = isReferable
+    ? t('action_referral', screeningResult.actionRecommendation)
+    : t('action_routine', screeningResult.actionRecommendation);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -20,7 +31,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
               style={{ height: '22px', maxWidth: '44px', objectFit: 'contain', borderRadius: '4px' }}
             />
             <span className="text-body" style={{ fontWeight: 800 }}>
-              Drishya Diagnostic Report Preview
+              {t('report_modal_title')}
             </span>
           </div>
           <button
@@ -60,12 +71,12 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     DRISHYA
                   </div>
                   <div className="text-micro" style={{ color: '#64748B' }}>
-                    AI-Powered Tele-Ophthalmology
+                    {t('report_tagline')}
                   </div>
                 </div>
               </div>
               <div className="text-h2" style={{ color: '#0F172A', fontWeight: 700 }}>
-                Drishya Diagnostic Report
+                {t('report_header_title')}
               </div>
             </div>
 
@@ -82,14 +93,14 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Patient Information
+                  {t('patient_info_sec')}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderRight: '1px solid #E2E8F0' }}>
                   {[
-                    ['PATIENT NAME', patientInfo.name || 'Anonymous Patient'],
-                    ['ABHA ID', patientInfo.abhaId || 'Not Registered'],
-                    ['AGE / SEX', patientInfo.age && patientInfo.gender ? `${patientInfo.age} Yrs / ${patientInfo.gender}` : (patientInfo.age ? `${patientInfo.age} Yrs` : (patientInfo.gender || 'Adult Screening'))],
-                    ['RESULT DATE', new Date().toLocaleDateString('en-IN')],
+                    [t('patient_name'), patientInfo.name || 'Anonymous Patient'],
+                    [t('abha_id'), patientInfo.abhaId || 'Not Registered'],
+                    [`${t('age')} / ${t('gender')}`, patientInfo.age && patientInfo.gender ? `${patientInfo.age} Yrs / ${patientInfo.gender}` : (patientInfo.age ? `${patientInfo.age} Yrs` : (patientInfo.gender || 'Adult Screening'))],
+                    [t('result_date'), new Date().toLocaleDateString('en-IN')],
                   ].map(([label, val], i) => (
                     <React.Fragment key={i}>
                       <div style={{
@@ -122,14 +133,14 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  General Information
+                  {t('general_info_sec')}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
                   {[
-                    ['SCREENING CENTER', 'PHC Rampur (Zone 4)'],
-                    ['EYE', 'Left Eye (OS)'],
-                    ['ORDERING CODE', 'E11.9'],
-                    ['REPORT ID', screeningResult.reportId || 'DSH-2026-84920'],
+                    [t('screening_center'), 'PHC Rampur (Zone 4)'],
+                    [t('eye_examined'), 'Left Eye (OS)'],
+                    [t('ordering_code'), 'E11.9'],
+                    [t('report_id'), screeningResult.reportId || 'DSH-2026-84920'],
                   ].map(([label, val], i) => (
                     <React.Fragment key={i}>
                       <div style={{
@@ -152,7 +163,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
               </div>
             </div>
 
-            {/* ── 3 Fundus Images in a Single Horizontal Row ──── */}
+            {/* ── 3 Fundus Panels Evaluated in Screening ──── */}
             <div style={{
               backgroundColor: '#0F172A',
               color: '#fff',
@@ -162,7 +173,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}>
-              3 Fundus Panels Evaluated in Screening
+              {t('multitask_maps_sec')}
             </div>
             <div style={{ padding: '12px 14px', borderBottom: '1px solid #CBD5E1' }}>
               <div style={{
@@ -185,7 +196,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     }}
                   />
                   <div className="text-micro" style={{ fontWeight: 700, marginTop: '4px', color: '#0F172A' }}>
-                    (a) Preprocessed Retina
+                    (a) {t('view_preprocessed')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
                     1:1 crop • CLAHE normalized
@@ -207,7 +218,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     }}
                   />
                   <div className="text-micro" style={{ fontWeight: 700, marginTop: '4px', color: '#0F172A' }}>
-                    (b) Detected Lesions
+                    (b) {t('view_lesions')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
                     MA (Red) • EX (Yel) • HE (Crimson)
@@ -229,7 +240,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     }}
                   />
                   <div className="text-micro" style={{ fontWeight: 700, marginTop: '4px', color: '#0F172A' }}>
-                    (c) Grad-CAM++ Attention
+                    (c) {t('view_gradcam')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
                     Neural saliency focus areas
@@ -256,15 +267,15 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}>
-              Diagnostic Results & Clinical Triage
+              {t('triage_title')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', borderBottom: '1px solid #CBD5E1' }}>
               {/* Left: Details */}
               <div style={{ borderRight: '1px solid #E2E8F0' }}>
                 {[
                   ['CONDITION', 'Diabetic Retinopathy (with Macular Risk Assessment)'],
-                  ['DIAGNOSIS', screeningResult.gradeDesc || 'No DR detected ETDRS level 20 and lower and no macular edema.'],
-                  ['CARE PLAN', screeningResult.actionRecommendation || (screeningResult.referable ? 'Refer to Ophthalmologist within 2-4 weeks' : 'Routine Rescreening in 12 Months')],
+                  ['DIAGNOSIS', localizedDiagnosis || 'No DR detected ETDRS level 20 and lower and no macular edema.'],
+                  ['CARE PLAN', localizedCarePlan || (isReferable ? 'Refer to Ophthalmologist within 2-4 weeks' : 'Routine Rescreening in 12 Months')],
                   ['AI INTERPRETATION', 'Autonomous deep neural interpretation via DRISHYA Retinal Engine v1.0.'],
                 ].map(([label, val], i) => (
                   <div key={i} style={{
@@ -343,14 +354,14 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Quantitative Retinal Biomarkers
+                  {t('biomarkers_title')}
                 </div>
                 <div>
                   {[
-                    ['Microaneurysms (MA)', screeningResult.biomarkers?.mas || '0 detected'],
-                    ['Exudate Area (EX)', screeningResult.biomarkers?.exudates || '0.00% area'],
-                    ['Hemorrhage Quadrants', screeningResult.biomarkers?.hemorrhages || '0 quadrants'],
-                    ['Macular Edema Risk', screeningResult.biomarkers?.macularRisk || (screeningResult.biomarkers?.neovascularization === 'Present (PDR)' ? 'High Risk' : 'Low Risk (Fovea Clear)')],
+                    [t('biomarker_mas'), screeningResult.biomarkers?.mas || '0 detected'],
+                    [t('biomarker_exudates'), screeningResult.biomarkers?.exudates || '0.00% area'],
+                    [t('biomarker_hemorrhages'), screeningResult.biomarkers?.hemorrhages || '0 quadrants'],
+                    [t('biomarker_macular'), screeningResult.biomarkers?.macularRisk || (screeningResult.biomarkers?.neovascularization === 'Present (PDR)' ? 'High Risk' : 'Low Risk (Fovea Clear)')],
                   ].map(([label, val], i) => (
                     <div key={i} style={{
                       display: 'grid',
@@ -429,10 +440,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 DISCLAIMER
               </div>
               <div style={{ fontSize: '9px', color: '#64748B', lineHeight: 1.5 }}>
-                A positive result indicates a high risk of diabetic retinopathy with a severity of ETDRS level 35
-                or higher and/or macular edema. DRISHYA AI diabetic retinopathy screening does not replace a
-                comprehensive eye exam. The images in this report are lower quality than the images used by the AI
-                model and should not be used for diagnostic purposes. See user manual for more details.
+                {t('disclaimer')}
               </div>
             </div>
           </div>
@@ -447,7 +455,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
           gap: '10px'
         }}>
           <button className="btn btn-outline" onClick={() => window.print()}>
-            <Printer size={16} /> Print Report
+            <Printer size={16} /> {t('print_report_btn')}
           </button>
           <button
             className="btn btn-primary"
@@ -466,7 +474,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
               onClose();
             }}
           >
-            <Download size={16} /> Download 1-Page PDF
+            <Download size={16} /> {t('download_pdf_btn')}
           </button>
         </div>
       </div>

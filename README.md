@@ -57,35 +57,43 @@ The system is designed for **health workers** with no medical training — they 
 
 ## System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        DRISHYA System                           │
-│                                                                 │
-│  ┌──────────────┐    HTTP POST     ┌─────────────────────────┐  │
-│  │  React SPA   │ ──────────────► │   FastAPI Backend        │  │
-│  │  (Vite/JSX)  │                 │   backend/main.py        │  │
-│  │              │ ◄────────────── │   port 8000              │  │
-│  └──────────────┘    JSON Result  └──────────┬──────────────┘  │
-│                                              │                  │
-│                                   ┌──────────▼──────────────┐  │
-│                                   │    ModelService          │  │
-│                                   │  model_service.py        │  │
-│                                   │                          │  │
-│                                   │  1. IQA (Python)         │  │
-│                                   │  2. CLAHE Preprocessing  │  │
-│                                   │  3. EfficientNetV2 MTL   │  │
-│                                   │  4. Lesion Segmentation  │  │
-│                                   │  5. Grad-CAM++           │  │
-│                                   │  6. Biomarker Extraction │  │
-│                                   │  7. PDF Report (ReportLab│  │
-│                                   └──────────┬──────────────┘  │
-│                                              │                  │
-│                              ┌───────────────▼────────────┐    │
-│                              │        Supabase             │    │
-│                              │  Storage: PDF + Heatmaps    │    │
-│                              │  DB Table: screenings       │    │
-│                              └────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["React SPA - Vite + JSX - Health Worker / Judge Inspector UI"]
+    B["FastAPI Backend - backend/main.py - port 8000"]
+
+    subgraph MS["ModelService - model_service.py"]
+        direction TB
+        MS1["1. Image Quality Assessment - IQA Score"]
+        MS2["2. CLAHE + Ben Graham Preprocessing"]
+        MS3["3. EfficientNetV2-B0 MTL - 5-class ICDR Grading"]
+        MS4["4. Lesion Segmentation - MA, EX, HE, SE Masks"]
+        MS5["5. Grad-CAM++ Heatmap - FOV-Masked XAI"]
+        MS6["6. Biomarker Extraction - MA Count, Exudate Area"]
+        MS7["7. Clinical PDF Report - ReportLab Auto-Generated"]
+        MS1 --> MS2 --> MS3 --> MS4 --> MS5 --> MS6 --> MS7
+    end
+
+    subgraph SB["Supabase Cloud"]
+        direction LR
+        SB1["Storage - PDF Reports + Heatmap Images"]
+        SB2["PostgreSQL DB - screenings table"]
+    end
+
+    REJECT["IQA Rejected - Request Retake Scan"]
+
+    A -- "POST /api/screen-patient" --> B
+    B --> MS
+    MS1 -- "Q less than 0.76 - UNGRADABLE" --> REJECT
+    REJECT -- "failure response" --> A
+    MS --> SB
+    B -- "JSON result + PDF URL" --> A
+
+    style MS fill:#1e293b,stroke:#38bdf8,color:#f1f5f9
+    style SB fill:#1e293b,stroke:#34d399,color:#f1f5f9
+    style REJECT fill:#450a0a,stroke:#ef4444,color:#fca5a5
+    style A fill:#1e293b,stroke:#818cf8,color:#f1f5f9
+    style B fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
 ```
 
 ---

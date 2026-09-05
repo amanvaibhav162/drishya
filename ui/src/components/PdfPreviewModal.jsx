@@ -243,7 +243,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     (c) {t('view_gradcam')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
-                    Neural saliency focus areas
+                    Visual AI evidence areas
                   </div>
                 </div>
               </div>

@@ -164,7 +164,7 @@ export default function JudgeInspectorMode({
                 {activeTab === 'gradcam' && heatmapImg && (
                   <img
                     src={heatmapImg}
-                    alt="Grad-CAM Saliency"
+                    alt="Grad-CAM Visual AI Evidence"
                     className="heatmap-layer"
                     style={{ opacity: heatmapOpacity / 100 }}
                   />
@@ -203,7 +203,7 @@ export default function JudgeInspectorMode({
             {activeTab === 'raw' && 'Raw field acquisition from portable camera with peripheral vignetting and flash glare.'}
             {activeTab === 'preprocessed' && 'Normalized retina using Ben Graham local Gaussian background subtraction and CLAHE contrast enhancement.'}
             {activeTab === 'lesions' && 'Explicit morphological lesion contours (Red circles: Microaneurysms, Yellow: Hard Exudates).'}
-            {activeTab === 'gradcam' && 'Grad-CAM++ neural saliency map proving classifier attention aligns with verified microaneurysms.'}
+            {activeTab === 'gradcam' && 'Grad-CAM++ visual AI evidence map proving classifier attention aligns with verified microaneurysms.'}
           </div>
         </div>
 

@@ -49,7 +49,7 @@ export const translations = {
     stage_2_sub: "Applying CLAHE adaptive histogram and green-channel contrast enhancement...",
     stage_3_title: "EfficientNetV2 Deep Multi-Task Inference",
     stage_3_sub: "Evaluating ICDR severity grading & referable DR probability...",
-    stage_4_title: "Lesion Saliency & Attention Map",
+    stage_4_title: "Visual AI Evidence & Attention Map",
     stage_4_sub: "Generating Grad-CAM++ neural activation map & localizing microaneurysms...",
     stage_5_title: "Compiling Certified Clinical Report",
     stage_5_sub: "Synthesizing biomarker findings and generating audit-ready PDF...",

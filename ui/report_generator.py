@@ -277,7 +277,7 @@ def generate_clinical_pdf(
 
     card_prep = _frame_image(panel_paths.get('preprocessed', ''), "<b>(a) Preprocessed Retina</b>", "1:1 crop • CLAHE normalized", img_dim, img_dim)
     card_lesions = _frame_image(panel_paths.get('lesions', ''), "<b>(b) Detected Lesions</b>", "MA (Red) • EX (Yel) • HE (Crimson) • SE (Cyan)", img_dim, img_dim)
-    card_gradcam = _frame_image(panel_paths.get('gradcam', ''), "<b>(c) Grad-CAM++ Attention</b>", "Neural saliency focus areas", img_dim, img_dim)
+    card_gradcam = _frame_image(panel_paths.get('gradcam', ''), "<b>(c) Grad-CAM++ Attention</b>", "Visual AI evidence focus areas", img_dim, img_dim)
 
     photos_table = Table([[card_prep, card_lesions, card_gradcam]], colWidths=[W / 3.0, W / 3.0, W / 3.0])
     photos_table.setStyle(TableStyle([

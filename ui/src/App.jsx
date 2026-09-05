@@ -140,7 +140,9 @@ function AppContent() {
               exudates: `${data.biomarkers?.exudate_area_pct ?? '0.00%'} area`,
               exudatesStatus: parseFloat(data.biomarkers?.exudate_area_pct || '0') > 1 ? 'Significant' : 'Low / Absent',
               hemorrhages: data.biomarkers?.hemorrhage_quadrants ? `${data.biomarkers.hemorrhage_quadrants} Quadrants` : 'None detected',
+              hemorrhagesStatus: (data.biomarkers?.hemorrhage_quadrants || 0) >= 4 ? 'Meets 4:2:1 Rule (Severe)' : (data.biomarkers?.hemorrhage_quadrants || 0) > 0 ? 'Below 4:2:1 Rule' : 'None Detected',
               neovascularization: data.grade === 4 ? 'Present (PDR)' : '0 (Absent)',
+              nvStatus: data.grade === 4 ? 'Proliferative (PDR)' : 'Non-Proliferative',
               macularRisk: data.biomarkers?.macular_risk || 'Low Risk',
               macularDetail: data.biomarkers?.macular_detail || 'No lesions in macular zone'
             },

@@ -268,22 +268,53 @@ export default function JudgeInspectorMode({
                       <tr>
                         <td style={{ fontWeight: 600 }}>{t('biomarker_mas')}</td>
                         <td><b>{biomarkers.mas}</b></td>
-                        <td><span className="badge badge-warn">{biomarkers.masStatus}</span></td>
+                        <td>
+                          <span className={`badge ${
+                            biomarkers.masStatus === 'High / Referral' ? 'badge-danger' : 
+                            biomarkers.masStatus === 'Mild' ? 'badge-warn' : 'badge-pass'
+                          }`}>
+                            {biomarkers.masStatus}
+                          </span>
+                        </td>
                       </tr>
                       <tr>
                         <td style={{ fontWeight: 600 }}>{t('biomarker_exudates')}</td>
                         <td><b>{biomarkers.exudates}</b></td>
-                        <td><span className="badge badge-warn">{biomarkers.exudatesStatus}</span></td>
+                        <td>
+                          <span className={`badge ${
+                            biomarkers.exudatesStatus === 'Significant' ? 'badge-danger' : 'badge-pass'
+                          }`}>
+                            {biomarkers.exudatesStatus}
+                          </span>
+                        </td>
                       </tr>
                       <tr>
                         <td style={{ fontWeight: 600 }}>{t('biomarker_hemorrhages')}</td>
                         <td><b>{biomarkers.hemorrhages}</b></td>
-                        <td><span className="badge badge-neutral">Below 4:2:1 Rule</span></td>
+                        <td>
+                          <span className={`badge ${
+                            biomarkers.hemorrhagesStatus?.includes('Severe') ? 'badge-danger' :
+                            (biomarkers.hemorrhages && !biomarkers.hemorrhages.toLowerCase().includes('none')) ? 'badge-warn' : 'badge-pass'
+                          }`}>
+                            {biomarkers.hemorrhagesStatus || 
+                              ((biomarkers.hemorrhages && !biomarkers.hemorrhages.toLowerCase().includes('none')) ? 'Below 4:2:1 Rule' : 'None Detected')}
+                          </span>
+                        </td>
                       </tr>
                       <tr>
                         <td style={{ fontWeight: 600 }}>{t('biomarker_nv')}</td>
                         <td><b>{biomarkers.neovascularization}</b></td>
-                        <td><span className="badge badge-pass">Non-Proliferative</span></td>
+                        <td>
+                          <span className={`badge ${
+                            (biomarkers.neovascularization?.includes('Present') || screeningResult?.grade === 4)
+                              ? 'badge-danger' 
+                              : 'badge-pass'
+                          }`}>
+                            {(biomarkers.neovascularization?.includes('Present') || screeningResult?.grade === 4)
+                              ? 'Proliferative (PDR)' 
+                              : 'Non-Proliferative'}
+                          </span>
+                        </td>
                       </tr>
                     </tbody>
                   </table>

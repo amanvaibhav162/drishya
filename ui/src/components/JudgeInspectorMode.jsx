@@ -61,8 +61,8 @@ export default function JudgeInspectorMode({
       {/* Pipeline Progress Stepper */}
       <div className="stepper-container">
         {steps.map((s, idx) => {
-          const isDone = currentStep > s.id;
-          const isActive = currentStep === s.id;
+          const isDone = currentStep > s.id || (s.id === 6 && Boolean(screeningResult) && !isProcessing);
+          const isActive = currentStep === s.id && !isDone;
           return (
             <React.Fragment key={s.id}>
               <div className={`step-item ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}>

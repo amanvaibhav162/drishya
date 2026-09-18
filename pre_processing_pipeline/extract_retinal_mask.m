@@ -1,13 +1,18 @@
 function [mask, croppedImg] = extract_retinal_mask(rgbImg)
-    % Convert image to grayscale for contrast
-    gray = rgb2gray(rgbImg);
+    % Use Red channel: highest optical reflectance across all melanin pigmentation
+    % Prevents clipping in dark/pigmented retinas (IDRiD, APTOS)
+    rChan = im2double(rgbImg(:,:,1));
     
-    % Threshold out the black margins (empirical threshold I > 10/255)
-    rawMask = gray > (10/255); 
+    % Robust thresholding on Red channel with guardrails
+    t = graythresh(rChan);
+    thresholdVal = max(0.04, min(t * 0.5, 0.15));
+    rawMask = rChan > thresholdVal;
     
-    % Clean up small holes/artifacts
-    cleanMask = imclose(rawMask, strel('disk', 7));
+    % Clean up small holes/artifacts and smooth border
+    cleanMask = imclose(rawMask, strel('disk', 15));
+    cleanMask = imfill(cleanMask, 'holes');
     mask = bwareafilt(cleanMask, 1);
+    mask = imopen(mask, strel('disk', 5));
     
     % Crop to valid bounding box
     stats = regionprops(mask, 'BoundingBox');

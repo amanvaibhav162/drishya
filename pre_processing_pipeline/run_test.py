@@ -4,18 +4,31 @@ import os
 import glob
 
 def extract_retinal_mask(rgbImg):
-    gray = cv2.cvtColor(rgbImg, cv2.COLOR_BGR2GRAY)
-    _, rawMask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    cleanMask = cv2.morphologyEx(rawMask, cv2.MORPH_CLOSE, kernel)
+    # Use Red channel (channel 2 in BGR) - highest reflectance across pigmentation levels
+    r_chan = rgbImg[:, :, 2]
     
-    # keep largest connected component
+    # Adaptive thresholding on Red channel with guard limits
+    otsu_val, _ = cv2.threshold(r_chan, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    thresh_val = max(12, min(int(otsu_val * 0.5), 38))
+    _, rawMask = cv2.threshold(r_chan, thresh_val, 255, cv2.THRESH_BINARY)
+    
+    # Clean up with morphological closing and fill holes
+    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+    cleanMask = cv2.morphologyEx(rawMask, cv2.MORPH_CLOSE, kernel_close)
+    
+    contours, _ = cv2.findContours(cleanMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if contours:
+        cv2.drawContours(cleanMask, contours, -1, 255, -1)
+        
     numLabels, labels, stats, centroids = cv2.connectedComponentsWithStats(cleanMask, connectivity=8)
     if numLabels > 1:
         largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
         cleanMask = (labels == largest_label).astype(np.uint8) * 255
     else:
         cleanMask = np.zeros_like(cleanMask)
+        
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    cleanMask = cv2.morphologyEx(cleanMask, cv2.MORPH_OPEN, kernel_open)
         
     x, y, w, h = cv2.boundingRect(cleanMask)
     if w > 0 and h > 0:
@@ -55,7 +68,7 @@ def assess_quality(rgbImg, mask):
     
     # Illum
     meanIllum = float(np.mean(validPixels)) if len(validPixels) > 0 else 0
-    metrics['Illumination'] = 1 - min(1, 2 * abs(meanIllum - 0.5))
+    metrics['Illumination'] = 1.0 - min(1.0, 2.0 * abs(meanIllum - 0.5))
     metrics['Contrast'] = float(np.std(validPixels)) if len(validPixels) > 0 else 0
     
     # FOV
@@ -69,10 +82,10 @@ def assess_quality(rgbImg, mask):
     return metrics
 
 def evaluate_iqa(metrics, thresholds):
-    F_norm = min(1, metrics['Focus'] / thresholds['F_target'])
+    F_norm = min(1.0, metrics['Focus'] / thresholds['F_target'])
     I_norm = metrics['Illumination']
     V_norm = metrics['FOV']
-    C_norm = min(1, metrics['Contrast'] / thresholds['C_target'])
+    C_norm = min(1.0, metrics['Contrast'] / thresholds['C_target'])
     
     weights = [0.35, 0.25, 0.20, 0.20]
     Q = weights[0]*F_norm + weights[1]*I_norm + weights[2]*V_norm + weights[3]*C_norm
@@ -89,49 +102,37 @@ def evaluate_iqa(metrics, thresholds):
     return status, feedback, Q
 
 def adaptive_enhance(rgbImg, mask, metrics, thresholds):
-    lab = cv2.cvtColor(rgbImg, cv2.COLOR_BGR2LAB)
+    img = rgbImg.copy()
+    mask_bool = mask > 0
+    
+    # 1. Decouple into CIE L*a*b* color space
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l_channel, a_channel, b_channel = cv2.split(lab)
     
-    l_float = l_channel.astype(np.float32) / 255.0
+    # 2. Illumination Homogenization strictly on Luminance L*
+    l_float = l_channel.astype(np.float32)
+    mean_retina_l = np.mean(l_float[mask_bool]) if np.any(mask_bool) else 128.0
+    l_filled = l_float.copy()
+    l_filled[~mask_bool] = mean_retina_l
     
-    if metrics['Illumination'] < 0.75:
-        sigma = max(rgbImg.shape[0], rgbImg.shape[1]) / 30.0
-        
-        # Zero-leakage fix: fill black background with mean retina intensity
-        meanRetina = np.mean(l_float[mask > 0])
-        l_filled = l_float.copy()
-        l_filled[mask == 0] = meanRetina
-        
-        bg = cv2.GaussianBlur(l_filled, (0, 0), sigma)
-        l_float = l_float - bg + meanRetina
-        l_float = np.clip(l_float, 0, 1)
-        
-    if metrics['Contrast'] < thresholds['C_target'] and metrics['Focus'] < thresholds['F_target']:
-        l_uint8 = (l_float * 255).astype(np.uint8)
-        # Drastically reduced h parameter to avoid erasing capillaries (analogous to DegreeOfSmoothing = 0.002)
-        l_uint8 = cv2.fastNlMeansDenoising(l_uint8, None, h=2, templateWindowSize=7, searchWindowSize=21)
-        l_float = l_uint8.astype(np.float32) / 255.0
-        
-    # CLAHE
-    l_uint8 = (l_float * 255).astype(np.uint8)
-    # Reduced clipLimit to prevent color distortion
-    clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8))
-    l_clahe = clahe.apply(l_uint8)
+    # Wide Gaussian blur captures low-frequency illumination manifold
+    sigma = max(img.shape[0], img.shape[1]) / 30.0
+    bg_l = cv2.GaussianBlur(l_filled, (0, 0), sigma)
+    l_flat = l_float - bg_l + mean_retina_l
+    l_flat = np.clip(l_flat, 0, 255).astype(np.uint8)
     
-    # Post-CLAHE Denoising (Bilateral Filter) to remove artificially introduced grain
-    l_clahe = cv2.bilateralFilter(l_clahe, d=5, sigmaColor=25, sigmaSpace=25)
+    # 3. Controlled Luminance-Only CLAHE
+    clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))
+    l_clahe = clahe.apply(l_flat)
     
-    # Conditional Sharpening
-    if metrics['Focus'] < thresholds['F_target'] and metrics['Focus'] > (thresholds['F_target'] * 0.5):
-        blur = cv2.GaussianBlur(l_clahe, (0,0), 1)
-        l_clahe = cv2.addWeighted(l_clahe, 1.8, blur, -0.8, 0)
-        
-    l_channel = l_clahe
-    lab_out = cv2.merge((l_channel, a_channel, b_channel))
+    # 4. Calibrated edge-preserving grain suppression on L* only
+    # Smooths CMOS sensor grain without blurring microaneurysms or vessel walls
+    l_clean = cv2.bilateralFilter(l_clahe, d=5, sigmaColor=15, sigmaSpace=15)
+    
+    # 5. Recombine with UNTOUCHED chromatic channels a* and b* (Zero color drift)
+    lab_out = cv2.merge((l_clean, a_channel, b_channel))
     enhancedRgb = cv2.cvtColor(lab_out, cv2.COLOR_LAB2BGR)
-    
-    # Mask out
-    enhancedRgb[mask == 0] = 0
+    enhancedRgb[~mask_bool] = 0
     return enhancedRgb
 
 def run_pipeline():
@@ -143,8 +144,8 @@ def run_pipeline():
     configParams = {
         'F_target': 0.0015,
         'C_target': 0.10,
-        'Q_reject': 0.76,
-        'Q_good': 0.78
+        'Q_reject': 0.55,
+        'Q_good': 0.80
     }
     
     reportFile = open(os.path.join(outDir, 'report.txt'), 'w')
@@ -154,42 +155,30 @@ def run_pipeline():
         rawImg = cv2.imread(imgPath)
         if rawImg is None: continue
         
-        # Crop to square first, then resize!
+        # Crop to square first, then resize to 512x512
         mask, croppedImg = extract_retinal_mask(rawImg)
-        croppedImg = cv2.resize(croppedImg, (384, 384))
-        mask = cv2.resize(mask, (384, 384))
+        croppedImg = cv2.resize(croppedImg, (512, 512))
+        mask = cv2.resize(mask, (512, 512))
         mask = (mask > 127).astype(np.uint8) * 255
+        
         metrics = assess_quality(croppedImg, mask)
         status, feedback, Q = evaluate_iqa(metrics, configParams)
         
-        reportFile.write(f"----------------------------------------\n")
-        reportFile.write(f"Image: {imgName}\n")
-        reportFile.write(f"Status: {status}\n")
-        reportFile.write(f"QualityScore: {Q:.4f}\n")
-        reportFile.write(f"Feedback: {feedback}\n")
+        print(f"[{i+1}/{len(files[:5])}] {imgName} -> Status: {status}, Q: {Q:.4f}, Focus: {metrics['Focus']:.6f}")
+        reportFile.write(f"{imgName}: Status={status}, Q={Q:.4f}, Focus={metrics['Focus']:.6f}, Feedback={feedback}\\n")
         
-        finalImg = None
-        if status == "UNGRADABLE":
-            pass
-        elif status == "BORDERLINE":
+        if status == "BORDERLINE":
             finalImg = adaptive_enhance(croppedImg, mask, metrics, configParams)
-            enh_metrics = assess_quality(finalImg, mask)
-            enh_status, enh_feedback, enh_Q = evaluate_iqa(enh_metrics, configParams)
-            if enh_status == "UNGRADABLE":
-                finalImg = None
+        elif status == "ACCEPTABLE":
+            finalImg = cv2.bitwise_and(croppedImg, croppedImg, mask=mask)
         else:
-            finalImg = croppedImg
+            finalImg = None
             
         if finalImg is not None:
-            outPath = os.path.join(outDir, 'processed_' + imgName)
-            cv2.imwrite(outPath, finalImg)
-            origPath = os.path.join(outDir, 'original_' + imgName)
-            cv2.imwrite(origPath, rawImg)
-            reportFile.write(f"Saved to: {outPath}\n")
-        else:
-            reportFile.write("Image rejected.\n")
+            cv2.imwrite(os.path.join(outDir, f"proc_{imgName}"), finalImg)
             
     reportFile.close()
+    print("Pipeline complete. Results written to:", outDir)
 
 if __name__ == '__main__':
     run_pipeline()

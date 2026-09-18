@@ -43,6 +43,7 @@ slprj/
 
 # Environment secrets (real keys stay local)
 backend/.env
+.env
 
 # Generated build output & dependencies
 ui/dist/

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from backend.config import PORT
+from backend.config import PORT, MODEL_PATH
 from backend.model_service import ModelService
 from backend.database import save_screening_record, get_all_screenings, upload_file_to_supabase, STORAGE_BUCKET_REPORTS, STORAGE_BUCKET_IMAGES
 
@@ -26,7 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model_service = ModelService(model_path="models/student_mtl_lcnet_best.pth")
+model_service = ModelService(model_path=MODEL_PATH)
 
 os.makedirs("backend/outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="backend/outputs"), name="outputs")

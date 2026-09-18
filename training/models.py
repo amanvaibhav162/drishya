@@ -19,6 +19,25 @@ from typing import Tuple, List, Optional
 from segmentation_models_pytorch.decoders.unet.decoder import UnetDecoder
 from segmentation_models_pytorch.base import SegmentationHead
 
+# Safe GlobalResponseNorm monkey-patch to prevent FP16 subnormal underflows & divide-by-zero
+try:
+    from timm.layers.grn import GlobalResponseNorm
+    def _safe_grn_forward(self, x):
+        orig_dtype = x.dtype
+        x_f32 = x.float()
+        x_g = x_f32.norm(p=2, dim=self.spatial_dim, keepdim=True)
+        x_n = x_g / (x_g.mean(dim=self.channel_dim, keepdim=True) + 1e-5)
+        res = x_f32 + torch.addcmul(
+            self.bias.float().view(self.wb_shape),
+            self.weight.float().view(self.wb_shape),
+            x_f32 * x_n
+        )
+        return res.to(orig_dtype)
+    GlobalResponseNorm.forward = _safe_grn_forward
+except Exception:
+    pass
+
+
 
 class MSAG(nn.Module):
     """
@@ -136,23 +155,25 @@ class DRISHYAMultiTaskModel(nn.Module):
         raw_feats = self.encoder(x_enc)
         features = [f.permute(0, 3, 1, 2) if (f.ndim == 4 and f.shape[1] != f.shape[-1] and f.shape[-1] in [96, 128, 192, 256, 384, 512, 768, 1024, 1536]) else f for f in raw_feats]
 
-        # UNet decoder reconstruction for lesion masks
-        dec_inputs = [x_enc] + features
-        decoder_out = self.decoder(dec_inputs)
+        # UNet decoder reconstruction executed in FP32 to prevent BatchNorm running stats overflow
+        with torch.amp.autocast('cuda', enabled=False):
+            features_f32 = [f.float() for f in features]
+            dec_inputs = [x_enc.float()] + features_f32
+            decoder_out = self.decoder(dec_inputs)
 
-        # Apply MSAG attention weighting
-        att_weights = self.msag(decoder_out)
-        refined_decoder_out = decoder_out * att_weights
-        masks = self.segmentation_head(refined_decoder_out)
+            # Apply MSAG attention weighting
+            att_weights = self.msag(decoder_out)
+            refined_decoder_out = decoder_out * att_weights
+            masks = self.segmentation_head(refined_decoder_out)
 
-        # Restore native resolution (512x512) if Swin was downsampled to 384
-        if masks.shape[2:] != (orig_h, orig_w):
-            masks = F.interpolate(masks, size=(orig_h, orig_w), mode='bilinear', align_corners=False)
+            # Restore native resolution (512x512) if Swin was downsampled to 384
+            if masks.shape[2:] != (orig_h, orig_w):
+                masks = F.interpolate(masks, size=(orig_h, orig_w), mode='bilinear', align_corners=False)
 
-        # Global pooling & ordinal/classification head
-        bottleneck = features[-1]
-        pooled = F.adaptive_avg_pool2d(bottleneck, 1).flatten(1)
-        logits = self.classifier(pooled)
+            # Global pooling & ordinal/classification head
+            bottleneck = features_f32[-1]
+            pooled = F.adaptive_avg_pool2d(bottleneck, 1).flatten(1)
+            logits = self.classifier(pooled)
 
         return logits, masks
 
@@ -178,7 +199,7 @@ class DRISHYAMultiTaskModel(nn.Module):
         return class_probs, mask_probs
 
 
-def build_teacher_model(teacher_id: int, pretrained: bool = True, gradient_checkpointing: bool = False) -> DRISHYAMultiTaskModel:
+def build_teacher_model(teacher_id: int, pretrained: bool = True, gradient_checkpointing: bool = True) -> DRISHYAMultiTaskModel:
     """
     Builds one of the 3 orthogonal teacher backbones calibrated for 24 GB VRAM:
       Teacher 1: ConvNeXtV2-Base
@@ -187,11 +208,13 @@ def build_teacher_model(teacher_id: int, pretrained: bool = True, gradient_check
     """
     if teacher_id == 1:
         arch = "convnextv2_base"
+        gradient_checkpointing = True
     elif teacher_id == 2:
         arch = "swin_base_patch4_window12_384"
-        gradient_checkpointing = True  # Swin benefits heavily from checkpointing on 24 GB
+        gradient_checkpointing = True
     elif teacher_id == 3:
         arch = "efficientnet_b5"
+        gradient_checkpointing = True
     else:
         raise ValueError(f"Unknown teacher_id {teacher_id}. Must be 1, 2, or 3.")
 

@@ -69,7 +69,10 @@ class TrainingEngine:
         self.log_file = os.path.join(self.output_dir, "training_metrics.jsonl")
 
         # Mixed precision GradScaler (FP16 optimized for Quadro RTX 6000 Turing)
-        self.scaler = torch.amp.GradScaler("cuda")
+        self.scaler = torch.amp.GradScaler("cuda", init_scale=8192.0, growth_interval=2000)
+
+        # Optimize cuDNN kernels for fixed 512x512 resolution (10-15% speedup)
+        torch.backends.cudnn.benchmark = True
 
         # State trackers
         self.start_epoch = 0
@@ -161,6 +164,20 @@ class TrainingEngine:
             epoch_path = os.path.join(self.output_dir, f"checkpoint_epoch_{epoch}_qwk_{self.best_qwk:.4f}.pth")
             torch.save(state, epoch_path)
 
+    def sanitize_buffers(self):
+        """Ensures all BatchNorm running statistics are finite and resets corrupted ones."""
+        repaired = 0
+        for name, m in self.model.named_modules():
+            if isinstance(m, (torch.nn.BatchNorm2d, torch.nn.BatchNorm1d)):
+                if m.running_mean is not None and not torch.isfinite(m.running_mean).all():
+                    m.running_mean.zero_()
+                    repaired += 1
+                if m.running_var is not None and not torch.isfinite(m.running_var).all():
+                    m.running_var.fill_(1.0)
+                    repaired += 1
+        if repaired > 0:
+            print(f"[INFO] Sanitized {repaired} non-finite BatchNorm buffers.")
+
     def load_checkpoint(self, checkpoint_path: str) -> int:
         """
         Resumes training state cleanly from a previous checkpoint.
@@ -169,9 +186,10 @@ class TrainingEngine:
             raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
 
         print(f"[INFO] Resuming training from checkpoint: {checkpoint_path}")
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
 
         self.model.load_state_dict(checkpoint["model_state_dict"])
+        self.sanitize_buffers()
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         if "scaler_state_dict" in checkpoint and self.scaler:
             self.scaler.load_state_dict(checkpoint["scaler_state_dict"])
@@ -211,6 +229,7 @@ class TrainingEngine:
         Includes OOM catch and recovery.
         """
         self.model.train()
+        self.sanitize_buffers()
         self.current_epoch = epoch
         total_loss = 0.0
         step_losses = []
@@ -220,30 +239,54 @@ class TrainingEngine:
 
         for batch_idx, batch in enumerate(pbar):
             try:
+                # Per-step warmup for Epoch 0 (first 500 batches: 1e-6 -> base_lr)
+                if epoch == 0 and batch_idx < 500:
+                    warmup_factor = max(0.005, (batch_idx + 1) / 500.0)
+                    for pg in self.optimizer.param_groups:
+                        if "initial_lr" not in pg:
+                            pg["initial_lr"] = pg["lr"]
+                        pg["lr"] = pg["initial_lr"] * warmup_factor
                 images = batch["image"].to(self.device, non_blocking=True)
                 grades = batch["grade"].to(self.device, non_blocking=True)
                 masks = batch["mask"].to(self.device, non_blocking=True)
                 has_mask = batch["has_mask"].to(self.device, non_blocking=True)
                 soft_targets = batch["soft_probs"].to(self.device, non_blocking=True) if "soft_probs" in batch else None
 
-                # Native FP16 AMP context for Turing GPU
+                # Native FP16 AMP context for Turing GPU model forward
                 with torch.amp.autocast("cuda", dtype=torch.float16):
                     logits, pred_masks = self.model(images)
-                    loss, breakdown = self.criterion(
-                        pred_logits=logits,
-                        pred_masks=pred_masks,
-                        target_grades=grades,
-                        target_masks=masks,
-                        has_mask=has_mask,
-                        soft_targets=soft_targets
-                    )
-                    # Scale loss for gradient accumulation
-                    loss_scaled = loss / self.gradient_accumulation_steps
+
+                # Loss computation executed strictly in FP32 to prevent 512x512 spatial sum overflow
+                loss, breakdown = self.criterion(
+                    pred_logits=logits.float(),
+                    pred_masks=pred_masks.float(),
+                    target_grades=grades,
+                    target_masks=masks.float() if masks is not None else None,
+                    has_mask=has_mask,
+                    soft_targets=soft_targets
+                )
+                loss_scaled = loss / self.gradient_accumulation_steps
+
+                # Defensive guard against non-finite loss to preserve model weights
+                if torch.isnan(loss) or torch.isinf(loss):
+                    print(f"[WARNING] Non-finite loss ({loss.item()}) at batch {batch_idx}! Skipping step.")
+                    self.optimizer.zero_grad(set_to_none=True)
+                    continue
 
                 self.scaler.scale(loss_scaled).backward()
 
                 if (batch_idx + 1) % self.gradient_accumulation_steps == 0 or (batch_idx + 1) == len(self.train_loader):
                     self.scaler.unscale_(self.optimizer)
+                    # Safe gradient guard: check all gradients are finite BEFORE clipping
+                    grads = [p.grad for p in self.model.parameters() if p.grad is not None]
+                    all_finite = torch.all(torch.stack([torch.isfinite(g).all() for g in grads])) if grads else True
+                    if not all_finite:
+                        print(f"[WARNING] Non-finite gradients detected at batch {batch_idx}! Skipping step.")
+                        self.scaler.step(self.optimizer)
+                        self.scaler.update()
+                        self.optimizer.zero_grad(set_to_none=True)
+                        self.global_step += 1
+                        continue
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
@@ -295,16 +338,18 @@ class TrainingEngine:
 
             with torch.amp.autocast("cuda", dtype=torch.float16):
                 logits, pred_masks = self.model(images)
-                loss, _ = self.criterion(
-                    pred_logits=logits,
-                    pred_masks=pred_masks,
-                    target_grades=grades,
-                    target_masks=masks,
-                    has_mask=has_mask
-                )
 
-            total_val_loss += loss.item()
-            val_steps += 1
+            loss, _ = self.criterion(
+                pred_logits=logits.float(),
+                pred_masks=pred_masks.float(),
+                target_grades=grades,
+                target_masks=masks.float() if masks is not None else None,
+                has_mask=has_mask
+            )
+
+            if torch.isfinite(loss):
+                total_val_loss += loss.item()
+                val_steps += 1
 
             # Predictions from CORAL logits
             if self.model.use_coral:
@@ -445,4 +490,12 @@ class TrainingEngine:
         print(f"\n=======================================================")
         print(f"🎉 Training Finished! Best QWK Achieved: {self.best_qwk:.4f}")
         print(f"Checkpoints and logs saved to: {self.output_dir}")
+
+        # Mark stage as fully completed
+        complete_flag = os.path.join(self.output_dir, "training_complete.flag")
+        with open(complete_flag, "w") as f:
+            f.write(f"Completed {self.num_epochs} epochs. Best QWK: {self.best_qwk:.4f}\n")
+        print(f"\n[INFO] Stage fully complete ({self.num_epochs} epochs). Flag saved: {complete_flag}\n")
+
         print(f"=======================================================\n")
+

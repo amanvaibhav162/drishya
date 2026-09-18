@@ -36,7 +36,8 @@ def coral_logits_to_expected_grade(logits: torch.Tensor) -> torch.Tensor:
     Converts CORAL binary logits [B, 4] to expected continuous grade E[y] in [0, 4].
     E[y] = sum_{k=0}^{K-2} sigmoid(logits_k)
     """
-    probs = torch.sigmoid(logits)
+    probs = torch.sigmoid(logits.float())
+
     return probs.sum(dim=-1)
 
 
@@ -47,8 +48,7 @@ def coral_logits_to_class_probs(logits: torch.Tensor) -> torch.Tensor:
     P(y = k) = P(y > k-1) - P(y > k)
     P(y = 4) = P(y > 3)
     """
-    probs = torch.sigmoid(logits)  # [B, 4]
-    b = logits.shape[0]
+    probs = torch.sigmoid(logits.float())
     device = logits.device
 
     p_greater = probs  # P(y > 0), P(y > 1), P(y > 2), P(y > 3)
@@ -78,7 +78,7 @@ class CoralLoss(nn.Module):
         targets: [B] integer class labels (0 to num_classes - 1)
         """
         binary_targets = grade_to_coral_target(targets, self.num_classes)
-        return F.binary_cross_entropy_with_logits(logits, binary_targets)
+        return F.binary_cross_entropy_with_logits(logits.float(), binary_targets.float())
 
 
 class MultiChannelDiceLoss(nn.Module):
@@ -95,6 +95,8 @@ class MultiChannelDiceLoss(nn.Module):
         targets: [B, C, H, W]
         mask_weight: [B] binary tensor indicating whether ground truth mask exists
         """
+        logits = logits.float()
+        targets = targets.float()
         probs = torch.sigmoid(logits)
         batch_size, num_channels = probs.shape[:2]
 
@@ -105,7 +107,7 @@ class MultiChannelDiceLoss(nn.Module):
         cardinality = probs.sum(dim=-1) + targets.sum(dim=-1)
 
         dice_per_channel = (2.0 * intersection + self.smooth) / (cardinality + self.smooth)
-        channel_loss = 1.0 - dice_per_channel  # [B, C]
+        channel_loss = torch.clamp(1.0 - dice_per_channel, min=0.0, max=1.0)  # [B, C]
 
         if mask_weight is not None:
             # Only average over samples with valid ground truth masks
@@ -136,6 +138,8 @@ class FocalTverskyLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor, mask_weight: Optional[torch.Tensor] = None) -> torch.Tensor:
+        logits = logits.float()
+        targets = targets.float()
         probs = torch.sigmoid(logits)
         batch_size, num_channels = probs.shape[:2]
 
@@ -147,7 +151,8 @@ class FocalTverskyLoss(nn.Module):
         false_neg = ((1.0 - probs) * targets).sum(dim=-1)
 
         tversky = (true_pos + self.smooth) / (true_pos + self.alpha * false_pos + self.beta * false_neg + self.smooth)
-        loss = torch.pow(1.0 - tversky, self.gamma)  # [B, C]
+        diff = torch.clamp(1.0 - tversky, min=0.0, max=1.0)
+        loss = torch.pow(diff + 1e-8, self.gamma)  # [B, C]
 
         if mask_weight is not None:
             valid_mask = mask_weight.unsqueeze(1)

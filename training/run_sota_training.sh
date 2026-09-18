@@ -15,16 +15,17 @@ set -eo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
+export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
 
 # Default Paths & Hyperparameters for 24 GB Quadro RTX 6000
 SPLITS_CSV="${SPLITS_CSV:-data/splits/5fold_splits.csv}"
 DATA_DIR="${DATA_DIR:-data/preprocessed}"
 DATA_ALL_CSV="${DATA_ALL_CSV:-data/splits/all_images.csv}"
 FOLD=0
-EPOCHS=30
+EPOCHS=20
 BATCH_SIZE=8        # Calibrated for 24 GB VRAM
 ACCUM_STEPS=2       # Effective Batch Size = 8 * 2 = 16
-WORKERS=8
+WORKERS=16
 STAGE="${STAGE:-all}"
 FORCE=0
 
@@ -73,10 +74,10 @@ while [[ $# -gt 0 ]]; do
         --data_dir) DATA_DIR="${2:-}"; shift 2 ;;
         --data_all_csv) DATA_ALL_CSV="${2:-}"; shift 2 ;;
         --fold) FOLD="${2:-0}"; shift 2 ;;
-        --epochs) EPOCHS="${2:-30}"; shift 2 ;;
+        --epochs) EPOCHS="${2:-20}"; shift 2 ;;
         --batch_size) BATCH_SIZE="${2:-8}"; shift 2 ;;
         --accum_steps) ACCUM_STEPS="${2:-2}"; shift 2 ;;
-        --workers) WORKERS="${2:-8}"; shift 2 ;;
+        --workers) WORKERS="${2:-16}"; shift 2 ;;
         --stage) STAGE="${2:-all}"; shift 2 ;;
         --force) FORCE=1; shift ;;
         -h|--help) usage ;;
@@ -175,7 +176,7 @@ run_stage() {
 if [[ "$STAGE" == "all" || "$STAGE" == "teacher1" ]]; then
     run_stage \
         "Teacher 1: ConvNeXtV2-Base" \
-        "models/teachers/convnextv2_base/best_model.pth" \
+        "models/teachers/convnextv2_base/training_complete.flag" \
         "$PYTHON_CMD" training/train_teacher.py \
             --teacher_id 1 \
             --splits_csv "$SPLITS_CSV" \
@@ -192,7 +193,7 @@ fi
 if [[ "$STAGE" == "all" || "$STAGE" == "teacher2" ]]; then
     run_stage \
         "Teacher 2: Swin-Base-384" \
-        "models/teachers/swin_base/best_model.pth" \
+        "models/teachers/swin_base/training_complete.flag" \
         "$PYTHON_CMD" training/train_teacher.py \
             --teacher_id 2 \
             --splits_csv "$SPLITS_CSV" \
@@ -209,7 +210,7 @@ fi
 if [[ "$STAGE" == "all" || "$STAGE" == "teacher3" ]]; then
     run_stage \
         "Teacher 3: EfficientNet-B5" \
-        "models/teachers/efficientnet_b5/best_model.pth" \
+        "models/teachers/efficientnet_b5/training_complete.flag" \
         "$PYTHON_CMD" training/train_teacher.py \
             --teacher_id 3 \
             --splits_csv "$SPLITS_CSV" \
@@ -248,7 +249,7 @@ fi
 if [[ "$STAGE" == "all" || "$STAGE" == "distill" ]]; then
     run_stage \
         "Student Knowledge Distillation (EfficientNetV2-S)" \
-        "models/student/best_model.pth" \
+        "models/student/training_complete.flag" \
         "$PYTHON_CMD" training/distill_student.py \
             --splits_csv "$SPLITS_CSV" \
             --data_dir "$DATA_DIR" \

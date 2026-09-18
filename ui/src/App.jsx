@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, AlertCircle, AlertTriangle, Info, X, ShieldCheck } from 'lucide-react';
+import { Menu, AlertCircle, AlertTriangle, Info, X, Bell, ChevronDown } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import HealthWorkerMode from './components/HealthWorkerMode';
 import JudgeInspectorMode from './components/JudgeInspectorMode';
+import PatientRecordsMode from './components/PatientRecordsMode';
 import PdfPreviewModal from './components/PdfPreviewModal';
 import LanguageSelector from './components/LanguageSelector';
 import { LanguageProvider } from './context/LanguageContext';
@@ -253,8 +254,8 @@ function AppContent() {
       {/* Main Workspace */}
       <main className="main-content">
         {/* Top App Bar */}
-        <header className="top-bar">
-          <div className="top-bar-left">
+        <header className="portal-top-bar">
+          <div className="portal-top-left">
             <button
               type="button"
               id="btn-hamburger"
@@ -266,17 +267,53 @@ function AppContent() {
             >
               <Menu size={18} />
             </button>
-            <span className="top-title">
-              {activeMode === 'health-worker' ? t('top_title_hw') : t('top_title_judge')}
-            </span>
+            <div className="portal-heading-group">
+              <span className="portal-main-title">
+                {activeMode === 'health-worker'
+                  ? t('top_title_hw', 'Health Worker Portal')
+                  : activeMode === 'patient-records'
+                  ? 'Patient Records Archive'
+                  : t('top_title_judge', 'Judge Pipeline Inspector')}
+              </span>
+              <span className="portal-sub-title">
+                {activeMode === 'patient-records'
+                  ? 'Supabase Cloud Database • Audit-Ready Screening Archives'
+                  : t('portal_subtitle', 'Early Detection • Healthier Communities')}
+              </span>
+            </div>
           </div>
-          <div className="top-bar-right">
-            <span className="edge-ready-pill" title="100% Offline Edge Inference Ready">
-              <span className="edge-ready-dot" />
-              <ShieldCheck size={13} />
-              <span>{t('edge_tag')}</span>
+          <div className="portal-top-right">
+            <span className="edge-pill-warm" title="100% Offline Edge Inference Ready">
+              <span className="edge-dot-terracotta" />
+              <span>{t('edge_tag', 'FP16 Model • Offline Edge Ready')}</span>
             </span>
+
             <LanguageSelector />
+
+            <button
+              type="button"
+              className="notification-bell-btn"
+              title="Notifications"
+              aria-label="Notifications"
+              onClick={() => showNotification('info', 'System Status', 'All local offline screening models and queues are running smoothly.')}
+            >
+              <Bell size={16} />
+              <span className="notification-dot-badge" />
+            </button>
+
+            <div
+              className="user-profile-widget"
+              title="Health Worker Profile"
+              onClick={() => alert('Logged in as Aman Vaibhav (PHC Health Worker)')}
+            >
+              <div className="user-avatar-circle">AV</div>
+              <div className="user-info-text">
+                <span className="user-full-name">Aman Vaibhav</span>
+                <span className="user-role-title">
+                  Health Worker <ChevronDown size={11} />
+                </span>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -323,6 +360,26 @@ function AppContent() {
               isProcessing={isProcessing}
               currentStep={currentStep}
               onOpenPdfModal={() => setShowPdfModal(true)}
+              onNavigateToRecords={() => setActiveMode('patient-records')}
+            />
+          ) : activeMode === 'patient-records' ? (
+            <PatientRecordsMode
+              onBackToPortal={() => setActiveMode('health-worker')}
+              onSelectPatientForIntake={(p) => {
+                setPatientInfo({
+                  name: p.patient_name || p.name || '',
+                  age: p.patient_age && p.patient_age !== 'N/A' ? String(p.patient_age) : '',
+                  gender: p.patient_gender || 'Male',
+                  phone: p.patient_phone && p.patient_phone !== 'N/A' ? p.patient_phone : '',
+                  abhaId: p.abha_id && p.abha_id !== 'N/A' ? p.abha_id : ''
+                });
+                setActiveMode('health-worker');
+                showNotification(
+                  'info',
+                  'Patient Record Loaded',
+                  `Loaded demographic details for ${p.patient_name || 'Patient'} into the screening intake form.`
+                );
+              }}
             />
           ) : (
             <JudgeInspectorMode

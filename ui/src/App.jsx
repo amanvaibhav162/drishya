@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, AlertCircle, AlertTriangle, Info, X, ShieldCheck } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import HealthWorkerMode from './components/HealthWorkerMode';
 import JudgeInspectorMode from './components/JudgeInspectorMode';
@@ -15,6 +15,8 @@ function AppContent() {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const stepTimersRef = useRef([]);
 
   // Automatically fall back to Health Worker portal on screens < 1000px
   useEffect(() => {
@@ -27,6 +29,49 @@ function AppContent() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [activeMode]);
+
+  // Accessible keyboard listener (Escape closes mobile drawer) and scroll locking
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+
+  // Auto-dismiss clinical notifications after 7 seconds
+  useEffect(() => {
+    if (!notification) return;
+    const timer = setTimeout(() => {
+      setNotification(null);
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, [notification]);
+
+  // Clean up any pending step timers on unmount
+  useEffect(() => {
+    return () => {
+      stepTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  const showNotification = (type, title, message) => {
+    setNotification({ type, title, message });
+  };
+
+  const clearNotification = () => {
+    setNotification(null);
+  };
 
   // Patient registration info
   const [patientInfo, setPatientInfo] = useState({
@@ -48,6 +93,7 @@ function AppContent() {
     setUploadedImage({ file, previewUrl, name });
     setScreeningResult(null);
     setCurrentStep(1);
+    clearNotification();
   };
 
   // Clear image to allow recapture or new upload
@@ -55,19 +101,26 @@ function AppContent() {
     setUploadedImage(null);
     setScreeningResult(null);
     setCurrentStep(1);
+    clearNotification();
   };
 
   // Live step-by-step pipeline execution
   const handleRunScreening = async () => {
     if (!uploadedImage?.file) {
-      alert(t('alert_upload_first', 'Please upload or select a retinal fundus scan first.'));
+      showNotification(
+        'warn',
+        t('alert_upload_first', 'Please upload or select a retinal fundus scan first.'),
+        'Capture a new fundus photograph or choose a pre-loaded validation sample before running AI analysis.'
+      );
       return;
     }
 
+    clearNotification();
     setIsProcessing(true);
     setCurrentStep(1);
 
-    const stepTimers = [
+    stepTimersRef.current.forEach(clearTimeout);
+    stepTimersRef.current = [
       setTimeout(() => setCurrentStep(2), 500),
       setTimeout(() => setCurrentStep(3), 1100),
       setTimeout(() => setCurrentStep(4), 1900),
@@ -89,6 +142,12 @@ function AppContent() {
           method: 'POST',
           body: formData
         });
+        if (!response.ok && (response.status === 404 || response.status === 502)) {
+          response = await fetch('http://localhost:8000/api/screen-patient', {
+            method: 'POST',
+            body: formData
+          });
+        }
       } catch {
         response = await fetch('http://localhost:8000/api/screen-patient', {
           method: 'POST',
@@ -118,6 +177,11 @@ function AppContent() {
             biomarkers: null,
             pdfDownloadUrl: null
           });
+          showNotification(
+            'warn',
+            'Image Quality Assessment (IQA) Rejected',
+            data.action || 'The uploaded scan has insufficient focus or illumination. Please recapture immediately.'
+          );
         } else {
           setScreeningResult({
             success: data.success,
@@ -153,15 +217,23 @@ function AppContent() {
         await new Promise((resolve) => setTimeout(resolve, 350));
       } else {
         const errorData = await response.json().catch(() => ({}));
-        stepTimers.forEach(clearTimeout);
+        stepTimersRef.current.forEach(clearTimeout);
         setCurrentStep(1);
-        alert(`Screening failed (${response.status}): ${errorData.detail || response.statusText}`);
+        showNotification(
+          'error',
+          `Screening Request Failed (${response.status})`,
+          errorData.detail || response.statusText || 'The screening request could not be processed by the server.'
+        );
       }
     } catch (err) {
-      stepTimers.forEach(clearTimeout);
+      stepTimersRef.current.forEach(clearTimeout);
       setCurrentStep(1);
       console.error('Inference error:', err);
-      alert(`Could not connect to AI Engine: ${err.message}. Please ensure the server is running.`);
+      showNotification(
+        'error',
+        'Could Not Connect to AI Engine',
+        `Unable to reach the DRISHYA screening engine (${err.message}). Ensure the backend server is running on port 8000.`
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -187,8 +259,10 @@ function AppContent() {
               type="button"
               id="btn-hamburger"
               className="hamburger-btn"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open Navigation Menu"
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              aria-label="Toggle Navigation Menu"
+              aria-expanded={sidebarOpen}
+              aria-controls="sidebar-navigation"
             >
               <Menu size={18} />
             </button>
@@ -196,13 +270,47 @@ function AppContent() {
               {activeMode === 'health-worker' ? t('top_title_hw') : t('top_title_judge')}
             </span>
           </div>
-          <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="top-bar-right">
+            <span className="edge-ready-pill" title="100% Offline Edge Inference Ready">
+              <span className="edge-ready-dot" />
+              <ShieldCheck size={13} />
+              <span>{t('edge_tag')}</span>
+            </span>
             <LanguageSelector />
           </div>
         </header>
 
         {/* Workspace Body */}
         <div className="workspace">
+          {/* Accessible Clinical Notice / Error Banner */}
+          {notification && (
+            <div
+              className={`clinical-notice-banner ${notification.type}`}
+              role="alert"
+              aria-live="polite"
+            >
+              <div className="clinical-notice-icon">
+                {notification.type === 'error' && <AlertCircle size={18} />}
+                {notification.type === 'warn' && <AlertTriangle size={18} />}
+                {notification.type === 'info' && <Info size={18} />}
+              </div>
+              <div className="clinical-notice-content">
+                <div className="clinical-notice-title">{notification.title}</div>
+                {notification.message && (
+                  <div className="clinical-notice-desc">{notification.message}</div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="clinical-notice-close"
+                onClick={clearNotification}
+                aria-label="Dismiss notification"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
+
           {activeMode === 'health-worker' ? (
             <HealthWorkerMode
               patientInfo={patientInfo}

@@ -1,9 +1,35 @@
-import React from 'react';
-import { X, Download, Printer } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Download, Printer, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../context/useLanguage';
 
 export default function PdfPreviewModal({ isOpen, onClose, screeningResult, patientInfo }) {
   const { t } = useLanguage();
+  const [downloadNotice, setDownloadNotice] = useState(null);
+
+  // Accessible keyboard listener (Escape closes modal) and background scroll locking
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  // Clear notice after 5 seconds
+  useEffect(() => {
+    if (!downloadNotice) return;
+    const timer = setTimeout(() => setDownloadNotice(null), 5000);
+    return () => clearTimeout(timer);
+  }, [downloadNotice]);
 
   if (!isOpen || !screeningResult) return null;
 
@@ -19,39 +45,99 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
     ? t('action_referral', screeningResult.actionRecommendation)
     : t('action_routine', screeningResult.actionRecommendation);
 
+  const handleDownload = () => {
+    const pdfUrl = screeningResult.pdfDownloadUrl || screeningResult.pdfUrl;
+    if (!pdfUrl) {
+      setDownloadNotice({
+        type: 'warn',
+        text: 'Pre-generated PDF file not yet cached. You can click "Print Report" to save directly as PDF via your browser.'
+      });
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      const safeName = (patientInfo.name || 'Patient').trim().replace(/\s+/g, '_');
+      link.download = `DRISHYA_Report_${safeName}.pdf`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setDownloadNotice({
+        type: 'success',
+        text: 'PDF download initiated successfully.'
+      });
+    } catch {
+      setDownloadNotice({
+        type: 'warn',
+        text: 'Could not trigger automated download. Please use "Print Report" to save.'
+      });
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: '860px' }} onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+    >
+      <div
+        className="modal-card"
+        style={{ maxWidth: '880px', width: '100%' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img
               src="/assets/drishyalogo.jpeg"
               alt="DRISHYA"
-              style={{ height: '22px', maxWidth: '44px', objectFit: 'contain', borderRadius: '4px' }}
+              style={{ height: '24px', maxWidth: '48px', objectFit: 'contain', borderRadius: '4px' }}
             />
-            <span className="text-body" style={{ fontWeight: 800 }}>
+            <span id="report-modal-title" className="text-body" style={{ fontWeight: 800 }}>
               {t('report_modal_title')}
             </span>
           </div>
           <button
+            type="button"
             className="btn btn-outline"
-            style={{ padding: '4px 8px' }}
+            style={{ padding: '6px 10px' }}
             onClick={onClose}
+            aria-label="Close report preview"
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* Modal Body: IDx-DR Style Layout */}
+        {/* Modal Body: IDx-DR Style Clinical Layout */}
         <div className="modal-body" style={{ maxWidth: '100%', padding: '20px' }}>
-          <div style={{
-            border: '1px solid #CBD5E1',
-            borderRadius: '6px',
-            backgroundColor: '#FFFFFF',
-            overflow: 'hidden'
-          }}>
+          {/* Inline feedback notice if download needs attention */}
+          {downloadNotice && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                marginBottom: '12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                backgroundColor: downloadNotice.type === 'success' ? '#DCFCE7' : '#FEF3C7',
+                color: downloadNotice.type === 'success' ? '#166534' : '#92400E',
+                border: `1px solid ${downloadNotice.type === 'success' ? '#86EFAC' : '#FCD34D'}`
+              }}
+              role="status"
+            >
+              {downloadNotice.type === 'success' ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+              <span>{downloadNotice.text}</span>
+            </div>
+          )}
 
+          <div className="pdf-report-sheet">
             {/* ── Report Header ──────────────────────────────── */}
             <div style={{
               display: 'flex',
@@ -67,7 +153,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   style={{ height: '36px', maxWidth: '72px', objectFit: 'contain', borderRadius: '4px' }}
                 />
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.3px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
                     DRISHYA
                   </div>
                   <div className="text-micro" style={{ color: '#64748B' }}>
@@ -81,106 +167,54 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
             </div>
 
             {/* ── Patient + General Info ────────────────────── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+            <div className="pdf-two-col-grid">
               {/* Left: Patient Information */}
               <div>
-                <div style={{
-                  backgroundColor: '#0F172A',
-                  color: '#fff',
-                  padding: '4px 12px',
-                  fontWeight: 700,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="pdf-section-header">
                   {t('patient_info_sec')}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderRight: '1px solid #E2E8F0' }}>
+                <div>
                   {[
                     [t('patient_name'), patientInfo.name || 'Anonymous Patient'],
                     [t('abha_id'), patientInfo.abhaId || 'Not Registered'],
                     [`${t('age')} / ${t('gender')}`, patientInfo.age && patientInfo.gender ? `${patientInfo.age} Yrs / ${patientInfo.gender}` : (patientInfo.age ? `${patientInfo.age} Yrs` : (patientInfo.gender || 'Adult Screening'))],
                     [t('result_date'), new Date().toLocaleDateString('en-IN')],
                   ].map(([label, val], i) => (
-                    <React.Fragment key={i}>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        color: '#64748B',
-                        backgroundColor: '#F8FAFC',
-                        borderBottom: '1px solid #E2E8F0'
-                      }}>{label}</div>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '11px',
-                        color: '#0F172A',
-                        borderBottom: '1px solid #E2E8F0'
-                      }}>{val}</div>
-                    </React.Fragment>
+                    <div key={i} className="pdf-table-row">
+                      <div className="pdf-table-label">{label}</div>
+                      <div className="pdf-table-val">{val}</div>
+                    </div>
                   ))}
                 </div>
               </div>
 
               {/* Right: General Information */}
               <div>
-                <div style={{
-                  backgroundColor: '#0F172A',
-                  color: '#fff',
-                  padding: '4px 12px',
-                  fontWeight: 700,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="pdf-section-header">
                   {t('general_info_sec')}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+                <div>
                   {[
                     [t('screening_center'), 'PHC Rampur (Zone 4)'],
                     [t('eye_examined'), 'Left Eye (OS)'],
                     [t('ordering_code'), 'E11.9'],
                     [t('report_id'), screeningResult.reportId || 'DSH-2026-84920'],
                   ].map(([label, val], i) => (
-                    <React.Fragment key={i}>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        color: '#64748B',
-                        backgroundColor: '#F8FAFC',
-                        borderBottom: '1px solid #E2E8F0'
-                      }}>{label}</div>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '11px',
-                        color: '#0F172A',
-                        borderBottom: '1px solid #E2E8F0'
-                      }}>{val}</div>
-                    </React.Fragment>
+                    <div key={i} className="pdf-table-row">
+                      <div className="pdf-table-label">{label}</div>
+                      <div className="pdf-table-val">{val}</div>
+                    </div>
                   ))}
                 </div>
               </div>
             </div>
 
             {/* ── 3 Fundus Panels Evaluated in Screening ──── */}
-            <div style={{
-              backgroundColor: '#0F172A',
-              color: '#fff',
-              padding: '4px 12px',
-              fontWeight: 700,
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
+            <div className="pdf-section-header">
               {t('multitask_maps_sec')}
             </div>
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid #CBD5E1' }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
-                gap: '12px'
-              }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid #CBD5E1' }}>
+              <div className="pdf-fundus-trio">
                 {/* Image 1: Preprocessed */}
                 <div style={{ textAlign: 'center' }}>
                   <img
@@ -195,7 +229,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                       border: '1px solid #E2E8F0'
                     }}
                   />
-                  <div className="text-micro" style={{ fontWeight: 700, marginTop: '4px', color: '#0F172A' }}>
+                  <div className="text-micro" style={{ fontWeight: 700, marginTop: '5px', color: '#0F172A' }}>
                     (a) {t('view_preprocessed')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
@@ -217,7 +251,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                       border: '1px solid #E2E8F0'
                     }}
                   />
-                  <div className="text-micro" style={{ fontWeight: 700, marginTop: '4px', color: '#0F172A' }}>
+                  <div className="text-micro" style={{ fontWeight: 700, marginTop: '5px', color: '#0F172A' }}>
                     (b) {t('view_lesions')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
@@ -239,7 +273,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                       border: '1px solid #E2E8F0'
                     }}
                   />
-                  <div className="text-micro" style={{ fontWeight: 700, marginTop: '4px', color: '#0F172A' }}>
+                  <div className="text-micro" style={{ fontWeight: 700, marginTop: '5px', color: '#0F172A' }}>
                     (c) {t('view_gradcam')}
                   </div>
                   <div className="text-micro" style={{ color: '#64748B', fontSize: '9px' }}>
@@ -251,25 +285,17 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 fontStyle: 'italic',
                 color: '#64748B',
                 textAlign: 'center',
-                marginTop: '6px'
+                marginTop: '8px'
               }}>
                 Image labeling and heatmaps are for explanatory guidance only and should not be used as independent diagnostic markers.
               </div>
             </div>
 
             {/* ── Results Section (Directly Below Photos) ─── */}
-            <div style={{
-              backgroundColor: '#0F172A',
-              color: '#fff',
-              padding: '4px 12px',
-              fontWeight: 700,
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
+            <div className="pdf-section-header">
               {t('triage_title')}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', borderBottom: '1px solid #CBD5E1' }}>
+            <div className="pdf-triage-split">
               {/* Left: Details */}
               <div style={{ borderRight: '1px solid #E2E8F0' }}>
                 {[
@@ -278,24 +304,9 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   ['CARE PLAN', localizedCarePlan || (isReferable ? 'Refer to Ophthalmologist within 2-4 weeks' : 'Routine Rescreening in 12 Months')],
                   ['AI INTERPRETATION', 'Autonomous deep neural interpretation via DRISHYA Retinal Engine v1.0.'],
                 ].map(([label, val], i) => (
-                  <div key={i} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '130px 1fr',
-                    borderBottom: i < 3 ? '1px solid #E2E8F0' : 'none'
-                  }}>
-                    <div style={{
-                      padding: '6px 10px',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      color: '#64748B',
-                      backgroundColor: '#F8FAFC'
-                    }}>{label}</div>
-                    <div style={{
-                      padding: '6px 10px',
-                      fontSize: '11px',
-                      color: '#0F172A',
-                      lineHeight: 1.4
-                    }}>{val}</div>
+                  <div key={i} className="pdf-table-row">
+                    <div className="pdf-table-label">{label}</div>
+                    <div className="pdf-table-val">{val}</div>
                   </div>
                 ))}
               </div>
@@ -306,7 +317,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '20px',
+                padding: '20px 16px',
                 gap: '4px',
                 backgroundColor: isReferable ? '#FEF2F2' : '#F0FDF4'
               }}>
@@ -316,7 +327,9 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   color: '#64748B',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
-                }}>Clinical Triage Decision</div>
+                }}>
+                  Clinical Triage Decision
+                </div>
                 <div style={{
                   fontSize: '22px',
                   fontWeight: 900,
@@ -331,29 +344,22 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                   fontSize: '10px',
                   fontWeight: 700,
                   color: resultColor,
-                  marginTop: '2px'
+                  marginTop: '4px',
+                  textAlign: 'center'
                 }}>
                   Protocol: {isReferable ? 'Specialist Slit-Lamp Exam Recommended' : 'Routine Primary Care Screening'}
                 </div>
-                <div className="text-micro" style={{ color: '#64748B', marginTop: '2px' }}>
+                <div className="text-micro" style={{ color: '#64748B', marginTop: '4px', textAlign: 'center' }}>
                   ICDR Grade {screeningResult.grade ?? 0} &nbsp;|&nbsp; Confidence: {screeningResult.confidence || '96.4%'} &nbsp;|&nbsp; IQA: {screeningResult.iqaPass !== false ? 'Pass' : 'Failed'}
                 </div>
               </div>
             </div>
 
             {/* ── Biomarkers & AI Specs Grid ────────────────── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+            <div className="pdf-two-col-grid">
               {/* Left: Quantitative Retinal Biomarkers */}
               <div style={{ borderRight: '1px solid #E2E8F0' }}>
-                <div style={{
-                  backgroundColor: '#0F172A',
-                  color: '#fff',
-                  padding: '4px 12px',
-                  fontWeight: 700,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="pdf-section-header">
                   {t('biomarkers_title')}
                 </div>
                 <div>
@@ -363,24 +369,9 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     [t('biomarker_hemorrhages'), screeningResult.biomarkers?.hemorrhages || '0 quadrants'],
                     [t('biomarker_macular'), screeningResult.biomarkers?.macularRisk || (screeningResult.biomarkers?.neovascularization === 'Present (PDR)' ? 'High Risk' : 'Low Risk (Fovea Clear)')],
                   ].map(([label, val], i) => (
-                    <div key={i} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '150px 1fr',
-                      borderBottom: i < 3 ? '1px solid #E2E8F0' : 'none'
-                    }}>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        color: '#64748B',
-                        backgroundColor: '#F8FAFC'
-                      }}>{label}</div>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '10px',
-                        color: '#0F172A',
-                        fontWeight: 600
-                      }}>{val}</div>
+                    <div key={i} className="pdf-table-row">
+                      <div className="pdf-table-label">{label}</div>
+                      <div className="pdf-table-val" style={{ fontWeight: 600 }}>{val}</div>
                     </div>
                   ))}
                 </div>
@@ -388,15 +379,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
 
               {/* Right: AI Engine Specifications & Benchmarks */}
               <div>
-                <div style={{
-                  backgroundColor: '#0F172A',
-                  color: '#fff',
-                  padding: '4px 12px',
-                  fontWeight: 700,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="pdf-section-header">
                   AI Engine Specifications & Benchmarks
                 </div>
                 <div>
@@ -406,24 +389,9 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                     ['Clinical Specificity', '91.8% (Target: DR & DME)'],
                     ['Gradability Rate', '96.0% (Rural Field Validated)'],
                   ].map(([label, val], i) => (
-                    <div key={i} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '140px 1fr',
-                      borderBottom: i < 3 ? '1px solid #E2E8F0' : 'none'
-                    }}>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        color: '#64748B',
-                        backgroundColor: '#F8FAFC'
-                      }}>{label}</div>
-                      <div style={{
-                        padding: '5px 10px',
-                        fontSize: '10px',
-                        color: '#0F172A',
-                        fontWeight: 600
-                      }}>{val}</div>
+                    <div key={i} className="pdf-table-row">
+                      <div className="pdf-table-label">{label}</div>
+                      <div className="pdf-table-val" style={{ fontWeight: 600 }}>{val}</div>
                     </div>
                   ))}
                 </div>
@@ -432,8 +400,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
 
             {/* ── Disclaimer ─────────────────────────────── */}
             <div style={{
-              borderTop: '1px solid #CBD5E1',
-              padding: '8px 12px',
+              padding: '10px 14px',
               backgroundColor: '#FAFAFA'
             }}>
               <div className="text-micro" style={{ fontWeight: 700, color: '#0F172A', marginBottom: '2px' }}>
@@ -447,32 +414,30 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
         </div>
 
         {/* Modal Actions */}
-        <div style={{
-          padding: '16px 20px',
-          borderTop: '1px solid var(--border-light)',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '10px'
-        }}>
-          <button className="btn btn-outline" onClick={() => window.print()}>
+        <div
+          className="modal-actions"
+          style={{
+            padding: '16px 20px',
+            borderTop: '1px solid var(--border-light)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '10px'
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => window.print()}
+            title="Print clean 1-page clinical diagnostic slip"
+          >
             <Printer size={16} /> {t('print_report_btn')}
           </button>
           <button
+            type="button"
             className="btn btn-primary"
             style={{ backgroundColor: '#0F172A', borderColor: '#0F172A' }}
-            onClick={() => {
-              const pdfUrl = screeningResult.pdfDownloadUrl || screeningResult.pdfUrl;
-              if (!pdfUrl) {
-                alert('No PDF report file available for download.');
-                return;
-              }
-              const link = document.createElement('a');
-              link.href = pdfUrl;
-              const safeName = (patientInfo.name || 'Patient').trim().replace(/\s+/g, '_');
-              link.download = `DRISHYA_Report_${safeName}.pdf`;
-              link.click();
-              onClose();
-            }}
+            onClick={handleDownload}
+            title="Download PDF report file"
           >
             <Download size={16} /> {t('download_pdf_btn')}
           </button>
@@ -481,3 +446,4 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
     </div>
   );
 }
+

@@ -220,6 +220,15 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .top-title {
@@ -228,6 +237,10 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   line-height: var(--leading-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .top-meta {
@@ -244,6 +257,82 @@ body {
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   font-weight: 500;
+}
+
+/* ── Language Selector Pill ────────────────────────────────────────────────── */
+.language-selector {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--bg-surface-elevated, #F8FAFC);
+  border: 1px solid var(--border-subtle, #CBD5E1);
+  border-radius: 9999px;
+  padding: 3px 6px;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+  flex-shrink: 0;
+}
+
+.language-selector:hover {
+  border-color: var(--border-strong, #94A3B8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.lang-icon {
+  color: #64748B;
+  margin-left: 5px;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  line-height: 1.2;
+  font-family: inherit;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-btn:hover:not(.active) {
+  color: #0F172A;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.lang-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--brand-primary, #0284C7);
+}
+
+.lang-btn.active {
+  background-color: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.lang-divider {
+  width: 1px;
+  height: 14px;
+  background-color: #CBD5E1;
+  display: inline-block;
+  margin: 0 1px;
+}
+
+.lang-full {
+  display: inline;
+}
+
+.lang-short,
+.lang-mini {
+  display: none;
 }
 
 /* Content Body */
@@ -876,19 +965,27 @@ body {
 /* ── Mobile Phone Viewports (< 640px) ──────────────────────────────────────── */
 @media (max-width: 640px) {
   .top-bar {
-    padding: 8px 12px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 
   .top-bar-left {
     gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .top-bar-right {
+    gap: 0;
+    flex-shrink: 0;
   }
 
   .top-title {
     font-size: 13.5px;
-    max-width: 140px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .workspace {
@@ -917,7 +1014,7 @@ body {
   }
 
   .language-selector {
-    padding: 2px 4px;
+    padding: 2px 3px;
     gap: 2px;
   }
 
@@ -927,7 +1024,19 @@ body {
 
   .lang-btn {
     padding: 3px 6px;
-    font-size: 11px;
+    font-size: 11.5px;
+  }
+
+  .lang-full {
+    display: none;
+  }
+
+  .lang-short {
+    display: inline;
+  }
+
+  .lang-mini {
+    display: none;
   }
 
   .image-canvas-wrapper {
@@ -948,65 +1057,291 @@ body {
   }
 }
 
-/* ── Language Selector Pill ────────────────────────────────────────────────── */
-.language-selector {
-  display: inline-flex;
+/* ── Ultra-compact Mobile Viewports (<= 380px) ────────────────────────────── */
+@media (max-width: 380px) {
+  .top-bar {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .top-bar-left {
+    gap: 4px;
+  }
+
+  .top-title {
+    font-size: 12px;
+  }
+
+  .language-selector {
+    padding: 2px;
+    gap: 1px;
+  }
+
+  .lang-btn {
+    padding: 2px 4.5px;
+    font-size: 10.5px;
+  }
+
+  .lang-full,
+  .lang-short {
+    display: none;
+  }
+
+  .lang-mini {
+    display: inline;
+  }
+}
+
+/* ── Clinical Alert & Notification Banner ── */
+.clinical-notice-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: var(--type-body);
+  line-height: 1.4;
+  animation: drishya-fade-in 0.2s ease-out;
+  border: 1px solid transparent;
+}
+
+.clinical-notice-banner.warn {
+  background-color: var(--status-warn-bg);
+  border-color: var(--status-warn-border);
+  color: #92400E;
+}
+
+.clinical-notice-banner.error {
+  background-color: var(--status-danger-bg);
+  border-color: var(--status-danger-border);
+  color: #991B1B;
+}
+
+.clinical-notice-banner.info {
+  background-color: var(--bg-subtle);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.clinical-notice-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.clinical-notice-content {
+  flex: 1;
+}
+
+.clinical-notice-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  margin-bottom: 2px;
+}
+
+.clinical-notice-desc {
+  font-size: 12.5px;
+  opacity: 0.92;
+}
+
+.clinical-notice-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  color: inherit;
+  opacity: 0.7;
+  border-radius: var(--radius-sm);
+  display: flex;
   align-items: center;
-  background-color: var(--bg-surface-elevated, #F8FAFC);
-  border: 1px solid var(--border-subtle, #CBD5E1);
-  border-radius: 9999px;
-  padding: 3px 6px;
-  gap: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: all 0.15s ease-in-out;
-}
-
-.language-selector:hover {
-  border-color: var(--border-strong, #94A3B8);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
-.lang-icon {
-  color: #64748B;
-  margin-left: 5px;
-  margin-right: 2px;
+  justify-content: center;
+  transition: opacity 0.15s ease;
   flex-shrink: 0;
 }
 
-.lang-btn {
-  background: transparent;
-  border: none;
-  border-radius: 9999px;
+.clinical-notice-close:hover {
+  opacity: 1;
+}
+
+.clinical-notice-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.edge-ready-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #64748B;
-  cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  line-height: 1.2;
-  font-family: inherit;
-  outline: none;
+  color: #15803D;
+  background-color: #DCFCE7;
+  border: 1px solid #86EFAC;
+  border-radius: 9999px;
+  letter-spacing: 0.2px;
 }
 
-.lang-btn:hover:not(.active) {
-  color: #0F172A;
-  background-color: rgba(0, 0, 0, 0.05);
+.edge-ready-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #16A34A;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
 }
 
-.lang-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--brand-primary, #0284C7);
+@media (max-width: 768px) {
+  .edge-ready-pill {
+    display: none;
+  }
 }
 
-.lang-btn.active {
+/* ── PDF Preview Sheet & Print System ── */
+.pdf-report-sheet {
+  border: 1px solid var(--border-strong, #CBD5E1);
+  border-radius: var(--radius-md, 6px);
+  background-color: #FFFFFF;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.pdf-section-header {
   background-color: #0F172A;
   color: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+  padding: 5px 14px;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.lang-divider {
-  width: 1px;
-  height: 14px;
-  background-color: #CBD5E1;
-  display: inline-block;
-  margin: 0 1px;
+.pdf-two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border-strong, #CBD5E1);
+}
+
+.pdf-triage-split {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  border-bottom: 1px solid var(--border-strong, #CBD5E1);
+}
+
+.pdf-fundus-trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pdf-table-row {
+  display: grid;
+  grid-template-columns: 135px 1fr;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.pdf-table-row:last-child {
+  border-bottom: none;
+}
+
+.pdf-table-label {
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  background-color: #F8FAFC;
+  border-right: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+}
+
+.pdf-table-val {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #0F172A;
+  line-height: 1.4;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 680px) {
+  .pdf-two-col-grid,
+  .pdf-triage-split {
+    grid-template-columns: 1fr;
+  }
+  
+  .pdf-table-row {
+    grid-template-columns: 120px 1fr;
+  }
+
+  .pdf-fundus-trio {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+/* ── Pure Clinical Print Output ── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .modal-overlay,
+  .modal-overlay * {
+    visibility: visible;
+  }
+
+  .modal-overlay {
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .modal-card {
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .modal-header,
+  .modal-actions,
+  .sidebar,
+  .top-bar,
+  .hamburger-btn {
+    display: none !important;
+  }
+
+  .modal-body {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .pdf-report-sheet {
+    border: 1.5px solid #0F172A !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .pdf-two-col-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .pdf-triage-split {
+    grid-template-columns: 1.2fr 0.8fr !important;
+  }
+
+  .pdf-fundus-trio {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
 }

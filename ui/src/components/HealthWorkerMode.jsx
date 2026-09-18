@@ -389,7 +389,7 @@ export default function HealthWorkerMode({
           ) : (
             /* Active Retinal Scan Loaded View */
             <div>
-              <div className="image-canvas-wrapper" style={{ height: '280px', marginBottom: '14px', borderRadius: '12px', overflow: 'hidden' }}>
+              <div className="image-canvas-wrapper" style={{ height: '280px', marginBottom: '14px', borderRadius: '0', overflow: 'hidden' }}>
                 <img
                   src={uploadedImage.previewUrl}
                   alt="Fundus Capture"
@@ -405,7 +405,7 @@ export default function HealthWorkerMode({
                 marginBottom: '14px',
                 padding: '8px 12px',
                 backgroundColor: '#F8FAFC',
-                borderRadius: '8px',
+                borderRadius: '0',
                 border: '1px solid #E2E8F0'
               }}>
                 <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>
@@ -428,7 +428,7 @@ export default function HealthWorkerMode({
                   <div style={{
                     backgroundColor: 'var(--status-danger-bg)',
                     border: '1px solid var(--status-danger-border)',
-                    borderRadius: '12px',
+                    borderRadius: '0',
                     padding: '12px 16px',
                     marginBottom: '14px',
                     display: 'flex',
@@ -456,7 +456,7 @@ export default function HealthWorkerMode({
                   <div style={{
                     backgroundColor: 'var(--status-pass-bg)',
                     border: '1px solid var(--status-pass-border)',
-                    borderRadius: '12px',
+                    borderRadius: '0',
                     padding: '10px 16px',
                     marginBottom: '14px',
                     display: 'flex',
@@ -560,7 +560,7 @@ export default function HealthWorkerMode({
                       key={sNum}
                       style={{
                         height: '4px',
-                        borderRadius: '2px',
+                        borderRadius: '0',
                         backgroundColor: isDone ? '#BD4319' : (isCurrent ? '#F5A88A' : '#E2E8F0'),
                         transition: 'background-color 0.3s ease'
                       }}
@@ -587,7 +587,7 @@ export default function HealthWorkerMode({
 
             <div style={{
               border: '1px solid var(--border-strong)',
-              borderRadius: '12px',
+              borderRadius: '0',
               padding: '16px',
               backgroundColor: screeningResult.referable ? 'var(--status-warn-bg)' : 'var(--status-pass-bg)',
               marginBottom: '16px'
@@ -691,7 +691,7 @@ export default function HealthWorkerMode({
                   display: 'inline-flex',
                   alignItems: 'center',
                   padding: '3px',
-                  borderRadius: '4px'
+                  borderRadius: '0'
                 }}
               >
                 <RefreshCw size={12} className={isLoadingPatients ? 'spin-icon' : ''} />

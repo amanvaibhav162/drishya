@@ -2,11 +2,7 @@ import React from 'react';
 import {
   Home,
   FileText,
-  Users,
   BarChart2,
-  Settings,
-  HelpCircle,
-  Building2,
   X
 } from 'lucide-react';
 import { useLanguage } from '../context/useLanguage';
@@ -45,7 +41,7 @@ export default function Sidebar({
                 height: '34px',
                 width: 'auto',
                 objectFit: 'contain',
-                borderRadius: '6px',
+                borderRadius: '0',
               }}
             />
             <div>
@@ -89,15 +85,6 @@ export default function Sidebar({
             <span>{t('nav_patient_records', 'Patient Records')}</span>
           </button>
 
-          {/* 3. Screening Queue */}
-          <button
-            type="button"
-            className="nav-link-exact"
-            onClick={() => alert('Screening Queue: 0 waiting patients in PHC queue.')}
-          >
-            <Users size={18} />
-            <span>{t('nav_screening_queue', 'Screening Queue')}</span>
-          </button>
 
           {/* 4. Reports (Allows switching to Judge Inspector Mode) */}
           <button
@@ -111,52 +98,8 @@ export default function Sidebar({
             <span>{activeMode === 'judge-inspector' ? t('judge_portal', 'Inspector Mode') : t('nav_reports', 'Reports')}</span>
           </button>
 
-          {/* 5. Settings */}
-          <button
-            type="button"
-            className="nav-link-exact"
-            onClick={() => alert('Opening Edge Device Configuration...')}
-          >
-            <Settings size={18} />
-            <span>{t('nav_settings', 'Settings')}</span>
-          </button>
 
-          {/* 7. Support & Help */}
-          <button
-            type="button"
-            className="nav-link-exact"
-            onClick={() => alert('Connecting to District Tele-Ophthalmology Support Desk...')}
-          >
-            <HelpCircle size={18} />
-            <span>{t('nav_support', 'Support & Help')}</span>
-          </button>
         </nav>
-
-        {/* Sidebar Middle Banner Card */}
-        <div className="sidebar-community-card">
-          <div className="sidebar-retina-icon-circle" />
-          <div className="sidebar-community-title">
-            {t('banner_sidebar_title', 'Clear Vision Stronger Communities')}
-          </div>
-          <div className="sidebar-community-sub">
-            {t('banner_sidebar_sub', 'Screen Today for a Brighter Tomorrow')}
-          </div>
-        </div>
-
-        {/* Sidebar Footer Info */}
-        <div className="sidebar-footer-exact">
-          <div className="sidebar-phc-name">
-            <Building2 size={15} style={{ color: '#1E293B', flexShrink: 0 }} />
-            <span>{t('phc_center', 'PHC Rampur (Zone 4)')}</span>
-          </div>
-          <div className="sidebar-telemed-hub">
-            {t('telemed_hub', 'Telemedicine Hub: District Hospital')}
-          </div>
-          <div className="sidebar-offline-indicator">
-            <span className="sidebar-offline-dot" />
-            <span>{t('offline_sync_text', 'Offline Mode • Data will sync automatically')}</span>
-          </div>
-        </div>
       </aside>
     </>
   );

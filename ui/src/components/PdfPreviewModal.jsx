@@ -96,7 +96,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
             <img
               src="/assets/drishyalogo.jpeg"
               alt="DRISHYA"
-              style={{ height: '24px', maxWidth: '48px', objectFit: 'contain', borderRadius: '4px' }}
+              style={{ height: '24px', maxWidth: '48px', objectFit: 'contain', borderRadius: '0' }}
             />
             <span id="report-modal-title" className="text-body" style={{ fontWeight: 800 }}>
               {t('report_modal_title')}
@@ -124,7 +124,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 gap: '8px',
                 padding: '8px 12px',
                 marginBottom: '12px',
-                borderRadius: '6px',
+                borderRadius: '0',
                 fontSize: '12px',
                 backgroundColor: downloadNotice.type === 'success' ? '#DCFCE7' : '#FEF3C7',
                 color: downloadNotice.type === 'success' ? '#166534' : '#92400E',
@@ -150,7 +150,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                 <img
                   src="/assets/drishyalogo.jpeg"
                   alt="DRISHYA Logo"
-                  style={{ height: '36px', maxWidth: '72px', objectFit: 'contain', borderRadius: '4px' }}
+                  style={{ height: '36px', maxWidth: '72px', objectFit: 'contain', borderRadius: '0' }}
                 />
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
@@ -225,7 +225,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                       aspectRatio: '1',
                       objectFit: 'contain',
                       backgroundColor: '#000',
-                      borderRadius: '4px',
+                      borderRadius: '0',
                       border: '1px solid #E2E8F0'
                     }}
                   />
@@ -247,7 +247,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                       aspectRatio: '1',
                       objectFit: 'contain',
                       backgroundColor: '#000',
-                      borderRadius: '4px',
+                      borderRadius: '0',
                       border: '1px solid #E2E8F0'
                     }}
                   />
@@ -269,7 +269,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
                       aspectRatio: '1',
                       objectFit: 'contain',
                       backgroundColor: '#000',
-                      borderRadius: '4px',
+                      borderRadius: '0',
                       border: '1px solid #E2E8F0'
                     }}
                   />

@@ -117,7 +117,6 @@ export default function JudgeInspectorMode({
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h3 className="text-h3">{t('multitask_maps_sec')}</h3>
-            <span className="badge badge-neutral">Resolution: 384×384 Tensor</span>
           </div>
 
           {/* Stage Tabs */}
@@ -269,10 +268,9 @@ export default function JudgeInspectorMode({
                         <td style={{ fontWeight: 600 }}>{t('biomarker_mas')}</td>
                         <td><b>{biomarkers.mas}</b></td>
                         <td>
-                          <span className={`badge ${
-                            biomarkers.masStatus === 'High / Referral' ? 'badge-danger' : 
+                          <span className={`badge ${biomarkers.masStatus === 'High / Referral' ? 'badge-danger' :
                             biomarkers.masStatus === 'Mild' ? 'badge-warn' : 'badge-pass'
-                          }`}>
+                            }`}>
                             {biomarkers.masStatus}
                           </span>
                         </td>
@@ -281,9 +279,8 @@ export default function JudgeInspectorMode({
                         <td style={{ fontWeight: 600 }}>{t('biomarker_exudates')}</td>
                         <td><b>{biomarkers.exudates}</b></td>
                         <td>
-                          <span className={`badge ${
-                            biomarkers.exudatesStatus === 'Significant' ? 'badge-danger' : 'badge-pass'
-                          }`}>
+                          <span className={`badge ${biomarkers.exudatesStatus === 'Significant' ? 'badge-danger' : 'badge-pass'
+                            }`}>
                             {biomarkers.exudatesStatus}
                           </span>
                         </td>
@@ -292,11 +289,10 @@ export default function JudgeInspectorMode({
                         <td style={{ fontWeight: 600 }}>{t('biomarker_hemorrhages')}</td>
                         <td><b>{biomarkers.hemorrhages}</b></td>
                         <td>
-                          <span className={`badge ${
-                            biomarkers.hemorrhagesStatus?.includes('Severe') ? 'badge-danger' :
+                          <span className={`badge ${biomarkers.hemorrhagesStatus?.includes('Severe') ? 'badge-danger' :
                             (biomarkers.hemorrhages && !biomarkers.hemorrhages.toLowerCase().includes('none')) ? 'badge-warn' : 'badge-pass'
-                          }`}>
-                            {biomarkers.hemorrhagesStatus || 
+                            }`}>
+                            {biomarkers.hemorrhagesStatus ||
                               ((biomarkers.hemorrhages && !biomarkers.hemorrhages.toLowerCase().includes('none')) ? 'Below 4:2:1 Rule' : 'None Detected')}
                           </span>
                         </td>
@@ -305,13 +301,12 @@ export default function JudgeInspectorMode({
                         <td style={{ fontWeight: 600 }}>{t('biomarker_nv')}</td>
                         <td><b>{biomarkers.neovascularization}</b></td>
                         <td>
-                          <span className={`badge ${
-                            (biomarkers.neovascularization?.includes('Present') || screeningResult?.grade === 4)
-                              ? 'badge-danger' 
-                              : 'badge-pass'
-                          }`}>
+                          <span className={`badge ${(biomarkers.neovascularization?.includes('Present') || screeningResult?.grade === 4)
+                            ? 'badge-danger'
+                            : 'badge-pass'
+                            }`}>
                             {(biomarkers.neovascularization?.includes('Present') || screeningResult?.grade === 4)
-                              ? 'Proliferative (PDR)' 
+                              ? 'Proliferative (PDR)'
                               : 'Non-Proliferative'}
                           </span>
                         </td>

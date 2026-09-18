@@ -36,11 +36,11 @@
   --status-danger-bg: #FEE2E2;
   --status-danger-border: #FCA5A5;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-card: 16px;
-  --radius-pill: 9999px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-card: 0px;
+  --radius-pill: 0px;
   --type-display: 1.75rem;
   --type-h1: 1.5rem;
   --type-h2: 1.125rem;
@@ -58,10 +58,11 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  border-radius: 0 !important;
 }
 
 body {
@@ -1406,7 +1407,7 @@ body {
   gap: 6px;
   background-color: #FDF8F5;
   border: 1px solid #F5D6C6;
-  border-radius: 9999px;
+  border-radius: 0px;
   padding: 5px 12px;
   font-size: 11.5px;
   font-weight: 700;
@@ -1417,7 +1418,7 @@ body {
 .edge-dot-terracotta {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 0px;
   background-color: #BD4319;
   display: inline-block;
 }
@@ -1427,7 +1428,7 @@ body {
   position: relative;
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  border-radius: 50%;
+  border-radius: 0px;
   width: 36px;
   height: 36px;
   display: flex;
@@ -1450,7 +1451,7 @@ body {
   right: 7px;
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 0px;
   background-color: #EF4444;
   border: 1.5px solid #FFFFFF;
 }
@@ -1468,7 +1469,7 @@ body {
 .user-avatar-circle {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 0px;
   background-color: #1E293B;
   color: #FFFFFF;
   font-size: 12px;
@@ -1519,7 +1520,7 @@ body {
 .card-step {
   background: #FFFFFF;
   border: 1px solid #ECEEEF;
-  border-radius: 16px;
+  border-radius: 0px;
   padding: 22px 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   margin-bottom: 20px;
@@ -1541,7 +1542,7 @@ body {
 .step-number-circle {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: 0px;
   background-color: #BD4319;
   color: #FFFFFF;
   font-size: 14px;
@@ -1571,7 +1572,7 @@ body {
 .eye-selector-badge {
   background-color: #FDF5EE;
   border: 1px solid #F5D6C6;
-  border-radius: 9999px;
+  border-radius: 0px;
   padding: 5px 12px;
   color: #BD4319;
   font-size: 11.5px;
@@ -1628,7 +1629,7 @@ body {
   width: 100%;
   background: #FFFFFF;
   border: 1px solid #D1D5DB;
-  border-radius: 8px;
+  border-radius: 0px;
   padding: 9px 12px;
   font-size: 13.5px;
   color: #1E293B;
@@ -1650,7 +1651,7 @@ body {
 /* Custom Dropzone with Retinal Backdrop */
 .portal-dropzone-exact {
   border: 1.5px dashed #E5A990;
-  border-radius: 14px;
+  border-radius: 0px;
   padding: 38px 20px;
   text-align: center;
   background-color: #FCF8F5;
@@ -1677,7 +1678,7 @@ body {
 .portal-upload-circle {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: 0px;
   background-color: #FDF5EE;
   border: 1px solid #E8D3C4;
   display: flex;
@@ -1711,7 +1712,7 @@ body {
 .sample-scan-pill {
   background: #FFFFFF;
   border: 1px solid #E5A990;
-  border-radius: 9999px;
+  border-radius: 0px;
   padding: 5px 14px;
   font-size: 11.5px;
   font-weight: 700;
@@ -1742,7 +1743,7 @@ body {
 .btn-portal-clear {
   background: #FFFFFF;
   border: 1px solid #D1D5DB;
-  border-radius: 8px;
+  border-radius: 0px;
   padding: 8px 18px;
   font-size: 13.5px;
   font-weight: 600;
@@ -1763,7 +1764,7 @@ body {
 .btn-portal-process {
   background: #BD4319;
   border: none;
-  border-radius: 8px;
+  border-radius: 0px;
   padding: 10px 24px;
   font-size: 14px;
   font-weight: 700;
@@ -1792,7 +1793,7 @@ body {
 .widget-healthy-eyes-banner {
   background-color: #FBF4ED;
   border: 1px solid #F5E8DC;
-  border-radius: 16px;
+  border-radius: 0px;
   padding: 22px 20px;
   position: relative;
   overflow: hidden;
@@ -1826,7 +1827,7 @@ body {
 .widget-quick-tips-card {
   background-color: #FCF7F1;
   border: 1px solid #F3E6DA;
-  border-radius: 16px;
+  border-radius: 0px;
   padding: 18px 20px;
   margin-bottom: 18px;
 }
@@ -1864,7 +1865,7 @@ body {
 .widget-recent-card {
   background-color: #FFFFFF;
   border: 1px solid #ECEEEF;
-  border-radius: 16px;
+  border-radius: 0px;
   padding: 18px 20px;
   margin-bottom: 18px;
 }
@@ -1902,7 +1903,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 6px;
-  border-radius: 8px;
+  border-radius: 0px;
   transition: background-color 0.15s ease;
   cursor: pointer;
 }
@@ -1920,7 +1921,7 @@ body {
 .widget-patient-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 0px;
   background-color: #F1F5F9;
   color: #334155;
   font-size: 11.5px;
@@ -1962,7 +1963,7 @@ body {
   font-size: 10.5px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 9999px;
+  border-radius: 0px;
   line-height: 1.2;
 }
 
@@ -1972,7 +1973,7 @@ body {
   font-size: 10.5px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 9999px;
+  border-radius: 0px;
   line-height: 1.2;
 }
 
@@ -2006,7 +2007,7 @@ body {
   gap: 12px;
   width: 100%;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 0px;
   border: 1px solid transparent;
   background: transparent;
   color: #475569;
@@ -2036,7 +2037,7 @@ body {
 .sidebar-community-card {
   background-color: #FDF5EC;
   border: 1px solid #F5E5D5;
-  border-radius: 14px;
+  border-radius: 0px;
   padding: 14px 16px;
   margin: 12px 14px 16px;
   position: relative;
@@ -2066,7 +2067,7 @@ body {
   transform: translateY(-50%);
   width: 38px;
   height: 38px;
-  border-radius: 50%;
+  border-radius: 0px;
   border: 1.5px solid #F5D6C6;
   background-color: #FFFFFF;
   background-image: url('/fundus_image.png');

@@ -343,7 +343,7 @@ export default function PatientRecordsMode({
                           backgroundColor: '#F1F5F9',
                           border: '1px solid #E2E8F0',
                           padding: '2px 8px',
-                          borderRadius: '6px',
+                          borderRadius: '0',
                           fontSize: '11.5px',
                           fontWeight: 700,
                           color: '#334155'

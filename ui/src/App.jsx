@@ -8,6 +8,7 @@ import PdfPreviewModal from './components/PdfPreviewModal';
 import LanguageSelector from './components/LanguageSelector';
 import { LanguageProvider } from './context/LanguageContext';
 import { useLanguage } from './context/useLanguage';
+import { runFullHumanDemo } from './demo/humanDemo';
 
 function AppContent() {
   const { t } = useLanguage();
@@ -18,6 +19,11 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notification, setNotification] = useState(null);
   const stepTimersRef = useRef([]);
+
+  // Expose human demo engine to window
+  useEffect(() => {
+    window.runFullHumanDemo = runFullHumanDemo;
+  }, []);
 
   // Automatically fall back to Health Worker portal on screens < 1000px
   useEffect(() => {

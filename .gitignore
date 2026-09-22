@@ -1,50 +1,91 @@
-# Python & Virtual Environment
+# Python & Virtual Environments (including symlinks)
+.venv
 .venv/
+venv
 venv/
+env
 env/
 __pycache__/
 *.py[cod]
 *$py.class
 *.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
-# Data & Models (Keep repo lightweight < 2GB)
-data/raw/
-data/processed/
-data/final_processed/
-data/formated_data_processed/
+# Nix & Direnv
+.direnv
+.direnv/
+.envrc.local
+result
+result-*
+
+# Data & Datasets (Ignore all large datasets except committed unseen test images)
+data/*
+!data/aptos/
+data/aptos/*
+!data/aptos/images/
+data/aptos/images/*
+!data/aptos/images/s00r00000/
+data/aptos/images/s00r00000/*
+!data/aptos/images/s00r00000/s00r00000.jpg
+!data/unseen_raw_samples/
+data/unseen_raw_samples/*
+!data/unseen_raw_samples/odir_1007_left.jpg
+data_*
+
+# Models & Checkpoints (Keep repo lightweight < 2GB)
 models/*
 !models/.gitkeep
+models/**
+!models/**/.gitkeep
 *.pth
 *.pt
 *.onnx*
 *.data
 *.safetensors
 *.bin
-reports/*.pdf
+*.ckpt
+*.h5
 
-# Generated fundus images & outputs
+# Generated Reports & Outputs
+reports/*
+!reports/.gitkeep
 backend/outputs/
 ui/public/assets/*.png
 ui/public/assets/*.pdf
 !ui/public/assets/drishyalogo.jpeg
 
-# MATLAB & Simulink artifacts
+# MATLAB & Simulink Artifacts
 *.asv
 *.slxc
 slprj/
 *.autosave
 *.mex*
+*.m~
 
 # Logs & IDE
 .idea/
 .vscode/
 *.log
 .DS_Store
+*.swp
+*~
 
-# Environment secrets (real keys stay local)
+# Environment Secrets
 backend/.env
+backend/.env.*
+!backend/.env.example
 .env
+.env.*
+!.env.example
+!.envrc
 
-# Generated build output & dependencies
-ui/dist/
+# Frontend / UI Build & Dependencies
 node_modules/
+ui/node_modules/
+ui/dist/
+dist/
+.vite/

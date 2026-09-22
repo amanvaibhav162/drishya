@@ -12,7 +12,6 @@ import {
   Upload,
   RotateCcw,
   ArrowRight,
-  ChevronDown,
   Activity,
   CreditCard,
   Lightbulb,
@@ -36,7 +35,6 @@ export default function HealthWorkerMode({
   const { t } = useLanguage();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [eyeExamined, setEyeExamined] = useState('OS'); // 'OS' (Left) or 'OD' (Right)
 
   // Real screening records pulled from Supabase backend storage
   const [recentPatients, setRecentPatients] = useState([]);
@@ -149,13 +147,13 @@ export default function HealthWorkerMode({
     },
   ];
 
-  const handleLoadSampleScan = async (e) => {
-    if (e) e.stopPropagation();
+  const handleLoadSampleScan = async (url = '/fundus_image.png', filename = 'fundus_image.png', e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     try {
-      const response = await fetch('/fundus_image.png');
+      const response = await fetch(url);
       const blob = await response.blob();
-      const file = new File([blob], 'fundus_image.png', { type: 'image/png' });
-      onImageSelected(file, '/fundus_image.png', 'fundus_image.png');
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      onImageSelected(file, url, filename);
     } catch (err) {
       console.error('Failed to load sample scan', err);
     }
@@ -325,18 +323,8 @@ export default function HealthWorkerMode({
                 </p>
               </div>
             </div>
-
-            {/* Eye Examined Selector Pill */}
-            <button
-              type="button"
-              className="eye-selector-badge"
-              onClick={() => setEyeExamined((prev) => (prev === 'OS' ? 'OD' : 'OS'))}
-              title="Click to toggle Left (OS) or Right (OD) eye"
-            >
-              <span>{t('eye_examined_prefix', 'EYE EXAMINED:')} {eyeExamined}</span>
-              <ChevronDown size={13} />
-            </button>
           </div>
+
 
           {/* Upload Dropzone (When no image is loaded) */}
           {!uploadedImage?.previewUrl ? (
@@ -373,15 +361,38 @@ export default function HealthWorkerMode({
                   {t('dropzone_subtitle', 'Supports high-resolution PNG, JPG, JPEG (min. 512×512)')}
                 </div>
 
-                <div style={{ marginTop: '12px' }}>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button
+                    id="btn-sample-normal"
                     type="button"
                     className="sample-scan-pill"
-                    onClick={handleLoadSampleScan}
-                    title="Load the pre-loaded fundus scan (fundus_image.png) for instant screening"
+                    onClick={(e) => handleLoadSampleScan('/assets/odir_1029_left.jpg', 'odir_1029_left.jpg', e)}
+                    title="Load normal fundus scan (Grade 0: No DR)"
                   >
                     <Sparkles size={12} />
-                    <span>Use Sample Fundus Scan</span>
+                    <span>Sample: Normal (Grade 0)</span>
+                  </button>
+
+                  <button
+                    id="btn-sample-moderate"
+                    type="button"
+                    className="sample-scan-pill"
+                    onClick={(e) => handleLoadSampleScan('/assets/odir_1007_left.jpg', 'odir_1007_left.jpg', e)}
+                    title="Load moderate DR scan (Grade 2: Moderate NPDR)"
+                  >
+                    <Sparkles size={12} />
+                    <span>Sample: Moderate DR (Grade 2)</span>
+                  </button>
+
+                  <button
+                    id="btn-sample-severe"
+                    type="button"
+                    className="sample-scan-pill"
+                    onClick={(e) => handleLoadSampleScan('/fundus_image.png', 'fundus_image.png', e)}
+                    title="Load severe DR scan (Grade 3: Severe NPDR)"
+                  >
+                    <Sparkles size={12} />
+                    <span>Sample: Severe NPDR (Grade 3)</span>
                   </button>
                 </div>
               </div>

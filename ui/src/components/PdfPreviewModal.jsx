@@ -103,6 +103,7 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
             </span>
           </div>
           <button
+            id="btn-close-pdf-modal"
             type="button"
             className="btn btn-outline"
             style={{ padding: '6px 10px' }}
@@ -421,9 +422,19 @@ export default function PdfPreviewModal({ isOpen, onClose, screeningResult, pati
             borderTop: '1px solid var(--border-light)',
             display: 'flex',
             justifyContent: 'flex-end',
+            alignItems: 'center',
             gap: '10px'
           }}
         >
+          <button
+            id="btn-close-pdf-modal-footer"
+            type="button"
+            className="btn btn-outline"
+            onClick={onClose}
+            style={{ marginRight: 'auto' }}
+          >
+            {t('close_btn', 'Close Preview')}
+          </button>
           <button
             type="button"
             className="btn btn-outline"

@@ -154,34 +154,39 @@ class GradCAMPlusPlus:
 
 def assess_image_quality(img_bgr):
     """
-    Computes Laplacian focus and illumination uniformity on retinal tissue,
-    excluding non-retinal black camera margins.
+    Resolution-invariant IQA: standardizes input image to 384x384 before computing
+    retinal Laplacian focus variance and illumination uniformity on retinal tissue.
     Returns: (is_pass, q_score, reason)
     """
     if len(img_bgr.shape) == 3:
-        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        h, w = img_bgr.shape[:2]
+        interp = cv2.INTER_AREA if (h > 384 or w > 384) else cv2.INTER_LINEAR
+        std_img = cv2.resize(img_bgr, (384, 384), interpolation=interp)
+        gray = cv2.cvtColor(std_img, cv2.COLOR_BGR2GRAY)
+        mask = create_fundus_fov_mask(std_img)
     else:
-        gray = img_bgr
+        gray = cv2.resize(img_bgr, (384, 384), interpolation=cv2.INTER_AREA)
+        mask = np.ones_like(gray) * 255
 
     # Extract retinal tissue mask to evaluate the actual retina, not black borders
-    mask = create_fundus_fov_mask(img_bgr)
     retina_pixels = gray[mask > 127]
     if len(retina_pixels) == 0:
         retina_pixels = gray.flatten()
 
     # Measure focus variance within the retina (erode slightly to avoid false high-variance at the disc perimeter)
     lap = cv2.Laplacian(gray, cv2.CV_64F)
-    eroded_mask = cv2.erode(mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15)), iterations=1)
+    eroded_mask = cv2.erode(mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)), iterations=1)
     retina_lap = lap[eroded_mask > 127]
     lap_var = float(np.var(retina_lap)) if len(retina_lap) > 100 else float(cv2.Laplacian(gray, cv2.CV_64F).var())
 
     mean_val = float(np.mean(retina_pixels))
 
-    focus_norm = min(1.0, lap_var / 150.0)
+    # Calibrated normalization: valid fundus lap_var in [10, 60], true blur in [1, 3]
+    focus_norm = min(1.0, lap_var / 25.0)
     illum_norm = 1.0 - min(1.0, abs(mean_val - 110.0) / 90.0)
     q_score = round(float(0.6 * focus_norm + 0.4 * illum_norm), 2)
 
-    if lap_var < 35.0:
+    if lap_var < 4.0:
         return False, q_score, "Image is blurry. Please hold camera steady."
     if mean_val < 25.0:
         return False, q_score, "Image is too dark. Increase illumination."
